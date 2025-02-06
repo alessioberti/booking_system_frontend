@@ -31,6 +31,7 @@
       </div>
     </form>
 
+    <
     <div class="flex items-center justify-between">
       <router-link to="/register"> Registrati </router-link>
       <router-link to="/reset-password"> Recupera Password </router-link>

@@ -1,13 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import MainLayout from '../components/MainLayout.vue';
 import LoginView from '../views/LoginView.vue';
-//import RegisterView from '../views/RegisterView.vue';
-//import ResetPassword from '../views/ResetPassword.vue';
 import Home from '../views/HomeView.vue';
-//import ExamSelection from '../views/ExamSelection.vue';
-//import BookView from '../views/BookView.vue';
-//import ManageView from '../views/ManageView.vue';
-//import AccountView from '../views/AccountView.vue';
+import ExamSelection from '../views/ExamSelectionView.vue';
+import AvailableSlots from '../views/AvailableSlotsView.vue';
+import Appointments from '../views/AppointmentsView.vue';
 import { useAuthStore } from '../stores/auth';
 
 const routes = [
@@ -18,9 +15,10 @@ const routes = [
       { path: '', name: 'home', component: Home },
       { path: '/login', name: 'login', component: LoginView },
       //{ path: '/register', name: 'register', component: RegisterView },
-      //{ path: '/reset-password', name: 'reset-password', component: ResetPassword },
-      // Rotte protette, ad esempio:
-      //{ path: '/account', name: 'account', component: AccountView, meta: { requiresAuth: true } },
+      { path: '/appointments', name: 'appointments', component: Appointments, meta: { requiresAuth: true } },
+      { path: '/exam-selection', name: 'exam-selection', component: ExamSelection, meta: { requiresAuth: true } },
+      { path: '/available-slots', name: 'available-slots', component: AvailableSlots, meta: { requiresAuth: true } },
+      
     ],
   },
 ];

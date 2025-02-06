@@ -1,17 +1,19 @@
 <template>
-  <nav class="bg-gray-800 text-white">
+  <nav
+    class="flex justify-between items-center px-4 py-2 bg-gray-800 text-white"
+  >
     <router-link to="/" class="font-bold text-xl">Logo</router-link>
-    <ul>
+    <ul class="flex list-none gap-4">
       <template v-if="isLoggedIn">
         <li>
           <router-link to="/" class="hover:underline">Home</router-link>
         </li>
         <li>
-          <router-link to="/manage" class="hover:underline"
+          <router-link to="/appointments" class="hover:underline"
             >Prenotazioni</router-link
           >
         </li>
-        <li>
+        <li class="flex items-center gap-2">
           <router-link to="/account" class="hover:underline"
             >Gestione Account</router-link
           >

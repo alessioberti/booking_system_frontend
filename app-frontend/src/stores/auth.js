@@ -1,11 +1,9 @@
 import { defineStore } from 'pinia';
-import api from '../service/api';
+import api from '../services/api';
 
 // definisci uno store per la gestione dell'autenticazione
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    // I token sono gestiti interamente dal backend via cookie,
-    // quindi qui memorizziamo solo le informazioni dell'utente
     user: null, 
     loading: false,
     error: null,
@@ -15,13 +13,12 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true;
       this.error = null;
       try {
-        // richiedi un token al server; il backend imposterà i cookie se il login ha successo
+        // richiedi un token al server 
         const response = await api.post(
           '/login',
           { email, password },
           { withCredentials: true }
         );
-        // Supponiamo che il backend restituisca un oggetto user (es. { user: { email: "..." } })
         this.user = response.data.user;
       } catch (err) {
         this.error = err.response?.data?.error || 'Errore durante il login';
@@ -43,10 +40,18 @@ export const useAuthStore = defineStore('auth', {
     // richiedi un nuovo token
     async refreshAccessToken() {
       try {
+        const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrf_refresh_token='))
+        ?.split('=')[1];
         const response = await api.post(
-          '/refresh-token',
+          '/refresh',
           {},
-          { withCredentials: true }
+          { withCredentials: true,
+            headers: {
+              'X-CSRF-TOKEN': csrfToken,
+            },
+          }
         );
         // Se il backend restituisce eventualmente il nuovo access token (opzionale)
         return response.data.access_token;
