@@ -1,0 +1,289 @@
+<template>
+  <div class="box-container">
+    <!-- Header -->
+    <div class="flex items-center mb-4">
+      <button class="button-back mr-6" @click="goToExamList">Indietro</button>
+      <h2 class="title-page">Disponibilità per {{ examName }}</h2>
+    </div>
+    <hr />
+
+    <!-- Filtri -->
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 mt-6">
+      <div class="w-full sm:w-1/2">
+        <label for="operator" class="block text-md font-medium text-gray-700 mb-1">Operatore</label>
+        <select id="operator" v-model="filters.operatorId" class="select" @change="applyFilters">
+          <option value="">-- Tutti --</option>
+          <option v-for="operator in operators" :key="operator.operator_id" :value="operator.operator_id">
+            {{ operator.name }}
+          </option>
+        </select>
+      </div>
+
+      <div class="w-full sm:w-1/2">
+        <label for="laboratory" class="block text-md font-medium text-gray-700 mb-1">Laboratorio</label>
+        <select id="laboratory" v-model="filters.laboratoryId" class="select" @change="applyFilters">
+          <option value="">-- Tutti --</option>
+          <option v-for="lab in laboratories" :key="lab.laboratory_id" :value="lab.laboratory_id">
+            {{ lab.name }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sub-title-page my-4">Seleziona il mese per visualizzare gli slot disponibili</div>
+    <!-- Paginazione tra mesi -->
+    <div class="flex justify-center items-center mb-6">
+      <button @click="prevMonth" :disabled="!prevCursor" class="button">
+        <div class="flex"><< <span class="hidden-mobile ml-2">Precedente</span></div>
+      </button>
+
+      <div class="text-lg font-semibold px-4">{{ currentMonthName }} {{ currentYear }}</div>
+      <button @click="nextMonth" :disabled="!nextCursor" class="button">
+        <div class="flex"><span class="hidden-mobile mr-2">Successivo</span> >></div>
+      </button>
+    </div>
+
+    <hr />
+    <!-- Elenco delle date disponibili -->
+    <div class="mb-6 mt-6">
+      <div class="sub-title-page mb-4">Giorni disponibili</div>
+      <div class="flex flex-wrap gap-2">
+        <div v-if="currentDates.length === 0" class="text-center text-lg text-gray-500">
+          Nessuna giorno prenotabile in questo mese.
+        </div>
+
+        <div
+          v-else
+          v-for="date in currentDates"
+          :key="date"
+          @click="selectDate(date)"
+          class="cursor-pointer px-3 py-2 rounded-md text-center"
+          :class="{
+            'button-selected': selectedDate === date,
+            'button-no-selected': selectedDate !== date,
+          }"
+        >
+          {{ formatDay(date) }}
+        </div>
+      </div>
+    </div>
+    <hr />
+    <!-- Lista degli slot -->
+    <div v-if="selectedDate && groupedSlots[selectedDate]" class="mt-10">
+      <h3 class="text-xl mb-4">
+        Disponibilità per il giorno <span class="font-bold">{{ formatSelectedDate(selectedDate) }}</span>
+      </h3>
+
+      <ul role="list" class="divide-y divide-gray-200">
+        <li
+          v-for="slot in groupedSlots[selectedDate]"
+          :key="slot.operator_availability_slot_start"
+          @click="openAppointmentDetailsModal(slot)"
+          class="slot-item cursor-pointer hover:bg-gray-100"
+        >
+          <div>
+            <div class="text-md font-semibold text-gray-900">
+              <div>Ora inizio: {{ slot.availability_slot_start }}</div>
+              <div>Ora fine: {{ slot.availability_slot_end }}</div>
+            </div>
+            <p class="mt-1 text-sm text-gray-500">{{ slot.operator_name }}</p>
+          </div>
+          <div class="text-md text-gray-700">
+            {{ slot.laboratory_name }}
+            <p class="text-sm text-gray-500">{{ slot.laboratory_address }}</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Modale per confermare la prenotazione -->
+    <BookConfirmModal
+      v-if="isModalOpen"
+      :slot="selectedSlot"
+      :selectedDate="selectedDate"
+      :examName="examName"
+      @close="closeModal"
+      @confirm="handleConfirmBooking"
+    />
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, computed, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import api from '../services/api';
+import { useViewDataStore } from '../stores/viewData';
+
+const router = useRouter();
+const viewDataStore = useViewDataStore();
+
+if (!viewDataStore.getData('selectedExam')) {
+  router.push({ name: 'exam-selection' });
+}
+
+const selectedExam = computed(() => viewDataStore.getData('selectedExam'));
+const examName = computed(() => (selectedExam.value ? selectedExam.value.name : ''));
+const examTypeId = computed(() => (selectedExam.value ? selectedExam.value.exam_type_id : null));
+const fromDatetime = ref('');
+const toDatetime = ref('');
+const currentDates = ref([]);
+const groupedSlots = ref({});
+const selectedDate = ref('');
+const filters = ref({
+  operatorId: '',
+  laboratoryId: '',
+});
+
+const operators = ref([]);
+const laboratories = ref([]);
+const nextCursor = ref(null);
+const prevCursor = ref(null);
+const isModalOpen = ref(false);
+const selectedSlot = ref(null);
+
+const currentMonthName = computed(() => {
+  if (!fromDatetime.value) return '';
+  const date = new Date(fromDatetime.value);
+  return date.toLocaleString('it-IT', { month: 'long' });
+});
+const currentYear = computed(() => {
+  if (!fromDatetime.value) return '';
+  return new Date(fromDatetime.value).getFullYear();
+});
+
+// aggiungi un mese a una data ISO
+const addMonthsToIso = (isoDate, months) => {
+  const date = new Date(isoDate);
+  date.setMonth(date.getMonth() + months);
+  return date.toISOString();
+};
+
+// come per il bakened la richiesta parte dalla data di domani
+const initializeDateRange = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const minDate = new Date(today.getTime() + 24 * 60 * 60 * 1000); // domani
+  fromDatetime.value = minDate.toISOString();
+  toDatetime.value = addMonthsToIso(fromDatetime.value, 1);
+};
+
+// formatta i giorni in stringa in italiano es lun 12
+const formatDay = (dateStr) => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric' });
+};
+
+// formatta iso format in stringa in italiano es.12/12/2021
+const formatSelectedDate = (dateStr) => {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
+// ruchiama available slots e aggiorna le variabili reattive
+const fetchSlots = async () => {
+  try {
+    const params = {
+      datetime_from_filter: fromDatetime.value,
+      datetime_to_filter: toDatetime.value,
+    };
+    // aggiungi filtri operator e laboratorio se presenti
+    if (filters.value.operatorId) params.operator_id = filters.value.operatorId;
+    if (filters.value.laboratoryId) params.laboratory_id = filters.value.laboratoryId;
+    // se è già stata selezionata una data la aggiunge ai parametri
+    if (selectedDate.value) params.page_date = selectedDate.value;
+
+    const response = await api.get(`/exam/${examTypeId.value}/available-slots`, { params });
+    const data = response.data;
+
+    // aggiorna le date disponibili e i cursori e le liste dei filtri
+    currentDates.value = data.date_list || [];
+    nextCursor.value = data.next_cursor_datetime;
+    prevCursor.value = data.prev_cursor_datetime;
+    operators.value = data.operators || [];
+    laboratories.value = data.laboratories || [];
+
+    // se non è già stata selezionata una data seleziona la prima (se non fosse usato il backend comunque restiuscie la prima data)
+    if (!selectedDate.value && currentDates.value.length > 0) {
+      selectedDate.value = currentDates.value[0];
+    }
+
+    // usa la data per selezionare gli slots disponibili di quella data
+    groupedSlots.value = {};
+    if (selectedDate.value) {
+      groupedSlots.value[selectedDate.value] = data.slots || [];
+    }
+  } catch (error) {
+    console.error('Errore nel fetch degli slot:', error);
+  }
+};
+
+// ricarica gli slot e filtri quando cambia la data selezionata
+const selectDate = (date) => {
+  selectedDate.value = date;
+  fetchSlots();
+};
+
+// ricarica gli slot e filtri quando cambiano i filtri
+const applyFilters = () => {
+  selectedDate.value = currentDates.value.length > 0 ? currentDates.value[0] : '';
+  fetchSlots();
+};
+
+// passa a al prossimo mese
+const nextMonth = () => {
+  if (nextCursor.value) {
+    fromDatetime.value = nextCursor.value;
+    toDatetime.value = addMonthsToIso(fromDatetime.value, 1);
+    selectedDate.value = ''; // reset della data selezionata
+    fetchSlots();
+  }
+};
+
+// passa al mese precedente
+const prevMonth = () => {
+  if (prevCursor.value) {
+    fromDatetime.value = prevCursor.value;
+    toDatetime.value = addMonthsToIso(fromDatetime.value, 1);
+    selectedDate.value = '';
+    fetchSlots();
+  }
+};
+
+// torna alla selezione dell'esame
+const goToExamList = () => {
+  router.push({ name: 'exam-selection' });
+};
+
+// apri un modale per inserire i dati paziente e confermare la prenotazione
+const openAppointmentDetailsModal = (slot) => {
+  selectedSlot.value = slot;
+  isModalOpen.value = true;
+};
+
+// chiudi il modale
+const closeModal = () => {
+  isModalOpen.value = false;
+  selectedSlot.value = null;
+};
+
+// Gestione della conferma della prenotazione
+const handleConfirmBooking = async (bookingData) => {
+  try {
+    await api.post('/book_slot', bookingData);
+    alert('Prenotazione completata con successo!');
+    closeModal();
+    fetchSlots();
+  } catch (error) {
+    console.error('Errore nella prenotazione:', error);
+    alert('Errore nella prenotazione. Riprova più tardi.');
+    closeModal();
+  }
+};
+
+onMounted(() => {
+  initializeDateRange();
+  fetchSlots();
+});
+</script>
+
+<style></style>

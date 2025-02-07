@@ -3,7 +3,7 @@ import MainLayout from '../components/MainLayout.vue';
 import LoginView from '../views/LoginView.vue';
 import Home from '../views/HomeView.vue';
 import ExamSelection from '../views/ExamSelectionView.vue';
-import AvailableSlots from '../views/AvailableSlotsView.vue';
+import SlotSelection from '../views/SlotSelectionView.vue';
 import Appointments from '../views/AppointmentsView.vue';
 import { useAuthStore } from '../stores/auth';
 
@@ -17,7 +17,7 @@ const routes = [
       //{ path: '/register', name: 'register', component: RegisterView },
       { path: '/appointments', name: 'appointments', component: Appointments, meta: { requiresAuth: true } },
       { path: '/exam-selection', name: 'exam-selection', component: ExamSelection, meta: { requiresAuth: true } },
-      { path: '/available-slots', name: 'available-slots', component: AvailableSlots, meta: { requiresAuth: true } },
+      { path: '/slot-selection', name: 'slot-selection', component: SlotSelection, meta: { requiresAuth: true } },
       
     ],
   },

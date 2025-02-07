@@ -23,22 +23,12 @@
 
     <!-- Paginazione -->
     <div class="flex justify-between items-center mt-6">
-      <button @click="prevPage" :disabled="currentPage === 1" class="button">
-        <div class="flex">
-          << <span class="hidden-mobile ml-2">Precedente</span>
-        </div>
+      <button @click="prevPage" :class="{ 'button-disabled': currentPage === 1 }" class="button">
+        <div class="flex"><< <span class="hidden-mobile ml-2">Precedente</span></div>
       </button>
-      <div class="text-sm text-gray-700">
-        Pagina {{ currentPage }} di {{ totalPages }}
-      </div>
-      <button
-        @click="nextPage"
-        :disabled="currentPage === totalPages"
-        class="button"
-      >
-        <div class="flex">
-          <span class="hidden-mobile mr-2">Successivo</span> >>
-        </div>
+      <div class="text-sm text-gray-700">Pagina {{ currentPage }} di {{ totalPages }}</div>
+      <button @click="nextPage" :class="{ 'button-disabled': currentPage === totalPages }" class="button">
+        <div class="flex"><span class="hidden-mobile mr-2">Successivo</span> >></div>
       </button>
     </div>
 
@@ -46,17 +36,15 @@
     <p v-if="errorMessage" class="text-red-600 text-sm mt-4">
       {{ errorMessage }}
     </p>
-    <p v-if="loading" class="text-gray-600 text-sm mt-4">
-      Caricamento in corso...
-    </p>
+    <p v-if="loading" class="text-gray-600 text-sm mt-4">Caricamento in corso...</p>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import api from "../services/api";
-import { useViewDataStore } from "../stores/viewData";
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import api from '../services/api';
+import { useViewDataStore } from '../stores/viewData';
 
 // Definizione delle variabili reattive
 const router = useRouter();
@@ -73,7 +61,7 @@ const fetchExamTypes = async () => {
   loading.value = true;
   errorMessage.value = null;
   try {
-    const response = await api.get("/exam", {
+    const response = await api.get('/exam', {
       params: {
         page: currentPage.value,
         per_page: perPage.value,
@@ -83,8 +71,8 @@ const fetchExamTypes = async () => {
     totalPages.value = response.data.pages;
     examTypes.value = response.data.data;
   } catch (err) {
-    console.error("Errore caricamento exam_types", err);
-    errorMessage.value = "Errore durante il caricamento degli esami";
+    console.error('Errore caricamento exam_types', err);
+    errorMessage.value = 'Errore durante il caricamento degli esami';
   } finally {
     loading.value = false;
   }
@@ -107,13 +95,13 @@ const nextPage = () => {
 
 // Salva l'esame selezionato nello store e passa alla selezione degli slot
 const selectExam = (exam) => {
-  viewDataStore.setData("selectedExam", exam);
-  router.push({ name: "available-slots" });
+  viewDataStore.setData('selectedExam', exam);
+  router.push({ name: 'slot-selection' });
 };
 
 // torna alla home
 const goToHome = () => {
-  router.push({ name: "home" });
+  router.push({ name: 'home' });
 };
 
 // Carica gli esami al montaggio della view

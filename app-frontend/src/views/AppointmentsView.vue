@@ -11,7 +11,7 @@
     </div>
 
     <!-- mostra messaggio in caso non siano prenotazioni-->
-    <div v-if="bookings.length === 0" class="text-center">
+    <div v-if="appointments.length === 0" class="text-center">
       <p class="text-gray-500">Non hai ancora prenotazioni.</p>
       <button @click="goBack" class="button-back">Indietro</button>
     </div>
@@ -20,85 +20,71 @@
     <div v-else>
       <ul class="space-y-4">
         <li
-          v-for="booking in bookings"
-          :key="booking.appointment_id"
+          v-for="appointment in appointments"
+          :key="appointment.appointment_id"
           class="px-4 py-8 my-4 border-b-4 border-gray-400"
         >
           <div class="mb-4 lg:grid lg:grid-cols-2">
             <div class="modal-info">
               <strong>Esame:&nbsp;</strong>
-              {{ booking.exam_type_name || "N/D" }} ({{
-                booking.operator_name || "N/D"
-              }})
+              {{ appointment.exam_type_name || 'N/D' }} ({{ appointment.operator_name || 'N/D' }})
             </div>
             <div class="modal-info">
               <strong>Paziente:&nbsp;</strong>
-              {{ booking.patient_name || "N/D" }}
+              {{ appointment.patient_name || 'N/D' }}
             </div>
             <div class="modal-info">
               <strong>Data:&nbsp;</strong>
-              {{ formatDate(booking.appointment_date) }}
+              {{ formatDate(appointment.appointment_date) }}
             </div>
             <div class="modal-info">
               <strong>Orario:&nbsp;</strong>
-              {{ formatTime(booking.appointment_time_start) }} →
-              {{ formatTime(booking.appointment_time_end) }}
+              {{ formatTime(appointment.appointment_time_start) }} →
+              {{ formatTime(appointment.appointment_time_end) }}
             </div>
             <div class="modal-info">
               <strong>Presso:&nbsp;</strong>
-              {{ booking.laboratory_name || "N/D" }}
+              {{ appointment.laboratory_name }}
             </div>
             <div class="modal-info">
               <strong>Indirizzo:&nbsp;</strong>
-              {{ booking.laboratory_address || "N/D" }}
+              {{ appointment.laboratory_address }}
             </div>
             <div class="modal-info">
               <strong>Tel:&nbsp;</strong>
-              <a
-                class="hover:underline hover:text-blue-600"
-                href="tel:+393241234567"
-                >3241234567</a
-              >
+              <a class="hover:underline hover:text-blue-600" :href="`tel:${appointment.laboratory_tel_number}`">{{
+                appointment.laboratory_tel_number
+              }}</a>
             </div>
             <div class="modal-info">
               <strong>Stato:&nbsp;</strong>
-              <div v-if="booking.rejected" class="flex items-center ml-2">
-                <div class="text-error mr-1 font-black">X</div>
-                Cancellata
+              <div v-if="appointment.rejected" class="flex items-center ml-2">
+                <div class="text-error mr-1 font-black">Cancellata</div>
               </div>
               <div v-else class="flex items-center ml-2">
-                <div class="text-success mr-1 font-black"></div>
-                Attiva
+                <div class="text-success mr-1 font-black">Attiva</div>
               </div>
             </div>
           </div>
+
           <div class="mt-4 text-right">
             <!-- se l'appuntamento è attivo attiva anche il pulsante per cancellarlo -->
-            <button
-              v-if="!booking.rejected"
-              @click="openCancelModal(booking)"
-              class="button-delete"
-            >
-              Cancella
-            </button>
+            <div v-if="!appointment.rejected" class="flex justify-end gap-4">
+              <button @click="openEditModal(appointment)" class="button">Modifica</button>
+              <button @click="openCancelModal(appointment)" class="button-delete">Cancella</button>
+            </div>
           </div>
         </li>
       </ul>
 
       <!-- Paginazione -->
       <div class="flex justify-between items-center mt-6">
-        <button @click="prevPage" :disabled="currentPage === 1" class="button">
-          << Precedente
+        <button @click="prevPage" :class="{ 'button-disabled': currentPage === 1 }" class="button">
+          <div class="flex"><< <span class="hidden-mobile ml-2">Precedente</span></div>
         </button>
-        <div class="text-sm text-gray-700">
-          Pagina {{ currentPage }} di {{ totalPages }}
-        </div>
-        <button
-          @click="nextPage"
-          :disabled="currentPage === totalPages"
-          class="button"
-        >
-          Successivo >>
+        <div class="text-sm text-gray-700">Pagina {{ currentPage }} di {{ totalPages }}</div>
+        <button @click="nextPage" :class="{ 'button-disabled': currentPage === totalPages }" class="button">
+          <div class="flex"><span class="hidden-mobile mr-2">Successivo</span> >></div>
         </button>
       </div>
 
@@ -107,34 +93,47 @@
       </div>
     </div>
 
-    <!-- Modal di conferma cancellazione -->
-    <div
-      v-if="showCancelModal"
-      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
-    >
+    <!-- Modale di conferma cancellazione -->
+    <div v-if="showCancelModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
         <h3 class="text-lg font-semibold mb-4">Conferma Cancellazione</h3>
         <p class="text-gray-700 text-sm mb-4">
           Vuoi davvero annullare la prenotazione del
-          <strong>{{ formatDate(bookingToCancel?.appointment_date) }}</strong>
+          <strong>{{ formatDate(appointmentToCancel?.appointment_date) }}</strong>
           dalle
-          <strong>{{
-            formatTime(bookingToCancel?.appointment_time_start)
-          }}</strong>
+          <strong>{{ formatTime(appointmentToCancel?.appointment_time_start) }}</strong>
           alle
-          <strong>{{
-            formatTime(bookingToCancel?.appointment_time_end)
-          }}</strong>
-          di <strong>{{ bookingToCancel?.patient_name }}</strong
+          <strong>{{ formatTime(appointmentToCancel?.appointment_time_end) }}</strong>
+          di <strong>{{ appointmentToCancel?.patient_name }}</strong
           >?
         </p>
         <div class="flex justify-end gap-4">
-          <button @click="cancelBookingConfirmed" class="button-success">
-            Sì, Annulla
-          </button>
-          <button @click="closeCancelModal" class="button-back">
-            No, Indietro
-          </button>
+          <button @click="cancelAppointmentConfirmed" class="button-delete">Sì, Annulla</button>
+          <button @click="closeCancelModal" class="button-back">No, Indietro</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modale di scelta Modifica -->
+    <div v-if="showEditModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
+        <h3 class="text-lg font-semibold mb-4">Modifica Appuntamento</h3>
+        <p class="text-gray-700 text-sm mb-4">
+          Vuoi modificare la prenotazione del
+          <strong>{{ formatDate(appointmentToEdit?.appointment_date) }}</strong>
+          dalle
+          <strong>{{ formatTime(appointmentToEdit?.appointment_time_start) }}</strong>
+          alle
+          <strong>{{ formatTime(appointmentToEdit?.appointment_time_end) }}</strong>
+          di <strong>{{ appointmentToEdit?.patient_name }}</strong
+          >?
+        </p>
+        <div class="mt-4 flex center gap-4">
+          <button @click="editAppointmentDatetime" class="button-success">Modifica Note/Paziente</button>
+          <button @click="editAppointmentPatient" class="button-success">Modifica Data/Orario</button>
+        </div>
+        <div class="flex justify-end gap-4 mt-4">
+          <button @click="closeEditModal" class="button-back">Indietro</button>
         </div>
       </div>
     </div>
@@ -142,109 +141,116 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
-import api from "../services/api";
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import api from '../services/api';
 
 //definisci variabili reattive
 
 const router = useRouter();
-const bookings = ref([]);
+const appointments = ref([]);
 const currentPage = ref(1);
 const totalPages = ref(1);
-const errorMessage = ref("");
-const successMessage = ref("");
+const errorMessage = ref('');
+const successMessage = ref('');
 const showCancelModal = ref(false);
-const bookingToCancel = ref(null);
+const appointmentToCancel = ref(null);
+const showEditModal = ref(false);
+const appointmentToEdit = ref(null);
 
 // richiede le prenotazioni
-const fetchBookings = async () => {
+const fetchAppointments = async () => {
   try {
-    errorMessage.value = "";
-    successMessage.value = "";
-    const resp = await api.get("/appointment", {
+    errorMessage.value = '';
+    successMessage.value = '';
+    const resp = await api.get('/appointment', {
       withCredentials: true,
       params: { page: currentPage.value, per_page: 10 },
     });
     currentPage.value = resp.data.current_page;
     totalPages.value = resp.data.pages;
-    bookings.value = resp.data.data;
+    appointments.value = resp.data.data;
   } catch (err) {
-    console.error("Errore fetchBookings:", err);
-    errorMessage.value =
-      err.response?.data?.error ||
-      "Errore durante il recupero delle prenotazioni.";
+    console.error('Errore fetchAppointments:', err);
+    errorMessage.value = err.response?.data?.error || 'Errore durante il recupero delle prenotazioni.';
   }
 };
 
 const prevPage = () => {
   if (currentPage.value > 1) {
     currentPage.value--;
-    fetchBookings();
+    fetchAppointments();
   }
 };
 
 const nextPage = () => {
   if (currentPage.value < totalPages.value) {
     currentPage.value++;
-    fetchBookings();
+    fetchAppointments();
   }
 };
 
-const openCancelModal = (booking) => {
-  errorMessage.value = "";
-  successMessage.value = "";
-  bookingToCancel.value = booking;
+const openCancelModal = (appointment) => {
+  errorMessage.value = '';
+  successMessage.value = '';
+  appointmentToCancel.value = appointment;
   showCancelModal.value = true;
 };
 
 const closeCancelModal = () => {
   showCancelModal.value = false;
-  bookingToCancel.value = null;
+  appointmentToCancel.value = null;
 };
 
-const cancelBookingConfirmed = async () => {
-  if (!bookingToCancel.value) return;
+const openEditModal = (appointment) => {
+  errorMessage.value = '';
+  successMessage.value = '';
+  appointmentToEdit.value = appointment;
+  showEditModal.value = true;
+};
+
+const closeEditModal = () => {
+  showEditModal.value = false;
+  appointmentToEdit.value = null;
+};
+
+const cancelAppointmentConfirmed = async () => {
+  if (!appointmentToCancel.value) return;
   try {
-    errorMessage.value = "";
-    successMessage.value = "";
+    errorMessage.value = '';
+    successMessage.value = '';
     // Chiamata PUT per annullare (reject) la prenotazione
-    await api.put(
-      `/appointment/${bookingToCancel.value.appointment_id}/reject`,
-      {},
-      { withCredentials: true }
-    );
+    await api.put(`/appointment/${appointmentToCancel.value.appointment_id}/reject`, {}, { withCredentials: true });
     showCancelModal.value = false;
     // Aggiorna lo stato della prenotazione a "rejected"
-    bookingToCancel.value.rejected = true;
-    successMessage.value = "Prenotazione annullata con successo.";
+    appointmentToCancel.value.rejected = true;
+    successMessage.value = 'Prenotazione annullata con successo.';
   } catch (err) {
-    console.error("Errore annullamento prenotazione:", err);
-    errorMessage.value =
-      err.response?.data?.error || "Errore durante la cancellazione.";
+    console.error('Errore annullamento prenotazione:', err);
+    errorMessage.value = err.response?.data?.error || 'Errore durante la cancellazione.';
   } finally {
-    bookingToCancel.value = null;
+    appointmentToCancel.value = null;
   }
 };
 
 function formatDate(dateStr) {
   const date = new Date(dateStr);
-  return date.toLocaleDateString("it-IT", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
+  return date.toLocaleDateString('it-IT', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
   });
 }
 
 function formatTime(timeStr) {
   const time = new Date(`1970-01-01T${timeStr}`);
-  return time.toLocaleTimeString("it-IT", {
-    hour: "2-digit",
-    minute: "2-digit",
+  return time.toLocaleTimeString('it-IT', {
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
-onMounted(fetchBookings);
+onMounted(fetchAppointments);
 
 const goBack = () => {
   router.back();

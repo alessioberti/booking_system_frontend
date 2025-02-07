@@ -7,7 +7,7 @@
 }
 
 .button-disabled{
-  @apply bg-gray-200 text-gray-800 opacity-60 cursor-not-allowed
+  @apply bg-gray-200 text-gray-800 opacity-20 cursor-not-allowed
 }
 
 
