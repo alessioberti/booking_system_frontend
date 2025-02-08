@@ -27,11 +27,11 @@
           <div class="mb-4 lg:grid lg:grid-cols-2">
             <div class="modal-info">
               <strong>Esame:&nbsp;</strong>
-              {{ appointment.exam_type_name || 'N/D' }} ({{ appointment.operator_name || 'N/D' }})
+              {{ appointment.exam_type_name }} ({{ appointment.operator_name }})
             </div>
             <div class="modal-info">
               <strong>Paziente:&nbsp;</strong>
-              {{ appointment.patient_name || 'N/D' }}
+              {{ appointment.patient_name }}
             </div>
             <div class="modal-info">
               <strong>Data:&nbsp;</strong>
@@ -39,7 +39,7 @@
             </div>
             <div class="modal-info">
               <strong>Orario:&nbsp;</strong>
-              {{ formatTime(appointment.appointment_time_start) }} →
+              {{ formatTime(appointment.appointment_time_start) }} -
               {{ formatTime(appointment.appointment_time_end) }}
             </div>
             <div class="modal-info">
@@ -108,7 +108,7 @@
           >?
         </p>
         <div class="flex justify-end gap-4">
-          <button @click="cancelAppointmentConfirmed" class="button-delete">Sì, Annulla</button>
+          <button @click="cancelappointmentConfirmed" class="button-delete">Sì, Annulla</button>
           <button @click="closeCancelModal" class="button-back">No, Indietro</button>
         </div>
       </div>
@@ -120,23 +120,33 @@
         <h3 class="text-lg font-semibold mb-4">Modifica Appuntamento</h3>
         <p class="text-gray-700 text-sm mb-4">
           Vuoi modificare la prenotazione del
-          <strong>{{ formatDate(appointmentToEdit?.appointment_date) }}</strong>
+          <strong>{{ formatDate(appointment?.appointment_date) }}</strong>
           dalle
-          <strong>{{ formatTime(appointmentToEdit?.appointment_time_start) }}</strong>
+          <strong>{{ formatTime(appointment?.appointment_time_start) }}</strong>
           alle
-          <strong>{{ formatTime(appointmentToEdit?.appointment_time_end) }}</strong>
-          di <strong>{{ appointmentToEdit?.patient_name }}</strong
+          <strong>{{ formatTime(appointment?.appointment_time_end) }}</strong>
+          di <strong>{{ appointment?.patient_name }}</strong
           >?
         </p>
         <div class="mt-4 flex center gap-4">
-          <button @click="editAppointmentDatetime" class="button-success">Modifica Note/Paziente</button>
-          <button @click="editAppointmentPatient" class="button-success">Modifica Data/Orario</button>
+          <button @click="openAppointmentDetails" class="button-success">Modifica Note/Paziente</button>
+          <button class="button-success">Modifica Data/Orario</button>
         </div>
         <div class="flex justify-end gap-4 mt-4">
           <button @click="closeEditModal" class="button-back">Indietro</button>
         </div>
       </div>
     </div>
+    <!-- Modale per confermare la prenotazione -->
+    <appointmentDetails
+      v-if="showAppointmentDetails"
+      @close="closeappointmentModal"
+      @confirm="updateBookingDetails"
+      :bookingData="appointmentToEdit"
+      :patientData="patientToEdit"
+      :examName="appointmentToEdit?.exam_type_name"
+      :appointmentInfo="appointmentToEdit?.info"
+    />
   </div>
 </template>
 
@@ -144,10 +154,11 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../services/api';
-
-//definisci variabili reattive
+import appointmentDetails from '../components/AppointmentDetails.vue';
 
 const router = useRouter();
+
+// Dichiarazione dei singoli ref
 const appointments = ref([]);
 const currentPage = ref(1);
 const totalPages = ref(1);
@@ -156,83 +167,11 @@ const successMessage = ref('');
 const showCancelModal = ref(false);
 const appointmentToCancel = ref(null);
 const showEditModal = ref(false);
+const showAppointmentDetails = ref(false);
+const patientToEdit = ref(null);
 const appointmentToEdit = ref(null);
 
-// richiede le prenotazioni
-const fetchAppointments = async () => {
-  try {
-    errorMessage.value = '';
-    successMessage.value = '';
-    const resp = await api.get('/appointment', {
-      withCredentials: true,
-      params: { page: currentPage.value, per_page: 10 },
-    });
-    currentPage.value = resp.data.current_page;
-    totalPages.value = resp.data.pages;
-    appointments.value = resp.data.data;
-  } catch (err) {
-    console.error('Errore fetchAppointments:', err);
-    errorMessage.value = err.response?.data?.error || 'Errore durante il recupero delle prenotazioni.';
-  }
-};
-
-const prevPage = () => {
-  if (currentPage.value > 1) {
-    currentPage.value--;
-    fetchAppointments();
-  }
-};
-
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++;
-    fetchAppointments();
-  }
-};
-
-const openCancelModal = (appointment) => {
-  errorMessage.value = '';
-  successMessage.value = '';
-  appointmentToCancel.value = appointment;
-  showCancelModal.value = true;
-};
-
-const closeCancelModal = () => {
-  showCancelModal.value = false;
-  appointmentToCancel.value = null;
-};
-
-const openEditModal = (appointment) => {
-  errorMessage.value = '';
-  successMessage.value = '';
-  appointmentToEdit.value = appointment;
-  showEditModal.value = true;
-};
-
-const closeEditModal = () => {
-  showEditModal.value = false;
-  appointmentToEdit.value = null;
-};
-
-const cancelAppointmentConfirmed = async () => {
-  if (!appointmentToCancel.value) return;
-  try {
-    errorMessage.value = '';
-    successMessage.value = '';
-    // Chiamata PUT per annullare (reject) la prenotazione
-    await api.put(`/appointment/${appointmentToCancel.value.appointment_id}/reject`, {}, { withCredentials: true });
-    showCancelModal.value = false;
-    // Aggiorna lo stato della prenotazione a "rejected"
-    appointmentToCancel.value.rejected = true;
-    successMessage.value = 'Prenotazione annullata con successo.';
-  } catch (err) {
-    console.error('Errore annullamento prenotazione:', err);
-    errorMessage.value = err.response?.data?.error || 'Errore durante la cancellazione.';
-  } finally {
-    appointmentToCancel.value = null;
-  }
-};
-
+// Funzioni di formattazione per date e orari
 function formatDate(dateStr) {
   const date = new Date(dateStr);
   return date.toLocaleDateString('it-IT', {
@@ -250,7 +189,131 @@ function formatTime(timeStr) {
   });
 }
 
-onMounted(fetchAppointments);
+// Funzione per recuperare le prenotazioni
+const getAppointments = async () => {
+  try {
+    errorMessage.value = '';
+    successMessage.value = '';
+    const resp = await api.get('/appointments', {
+      withCredentials: true,
+      params: { page: currentPage.value, per_page: 10 },
+    });
+    currentPage.value = resp.data.current_page;
+    totalPages.value = resp.data.pages;
+    appointments.value = resp.data.data;
+  } catch (err) {
+    console.error('Unable to get appointments:', err);
+    errorMessage.value = 'Errore durante il recupero delle prenotazioni.';
+  }
+};
+
+// Funzioni per la paginazione
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+    getAppointments();
+  }
+};
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+    getAppointments();
+  }
+};
+
+// Funzioni per gestire il modale di cancellazione
+const openCancelModal = (appointment) => {
+  errorMessage.value = '';
+  successMessage.value = '';
+  appointmentToCancel.value = appointment;
+  showCancelModal.value = true;
+};
+
+const closeCancelModal = () => {
+  showCancelModal.value = false;
+  appointmentToCancel.value = null;
+};
+
+const cancelappointmentConfirmed = async () => {
+  if (!appointmentToCancel.value) return;
+  try {
+    errorMessage.value = '';
+    successMessage.value = '';
+    // Esegui la chiamata per annullare l'appuntamento
+    await api.put(`/appointment/${appointmentToCancel.value.appointment_id}/reject`);
+    showCancelModal.value = false;
+    appointmentToCancel.value.rejected = true;
+    successMessage.value = 'Prenotazione annullata con successo.';
+  } catch (err) {
+    console.error('Errore annullamento prenotazione:', err);
+    errorMessage.value = err.response?.data?.error || 'Errore durante la cancellazione.';
+  } finally {
+    appointmentToCancel.value = null;
+  }
+};
+
+// Funzioni per gestire il modale di modifica
+const openEditModal = (appointment) => {
+  errorMessage.value = '';
+  successMessage.value = '';
+  appointmentToEdit.value = appointment;
+  showEditModal.value = true;
+};
+
+const closeEditModal = () => {
+  showEditModal.value = false;
+  appointmentToEdit.value = null;
+};
+
+const openAppointmentDetails = async () => {
+  await getAppointmentPatientData();
+  showEditModal.value = false;
+  showAppointmentDetails.value = true;
+};
+
+const getAppointmentPatientData = async () => {
+  try {
+    const response = await api.get(`/appointments/${appointment.value.appointment_id}/patient`);
+    if (response && response.data) {
+      patientToEdit.value = response.data;
+    } else {
+      patientToEdit.value = {};
+    }
+  } catch (error) {
+    console.error(': Unable to get appointment patient data ', error);
+  }
+};
+
+const closeappointmentModal = () => {
+  showAppointmentDetails.value = false;
+  appointment.value = null;
+};
+
+const editappointmentDatetime = () => {
+  // da implementare
+};
+
+const updateBookingDetails = async (confirmedappointment) => {
+  try {
+    errorMessage.value = '';
+    successMessage.value = '';
+    const response = await api.put(
+      `/appointment/${appointment.value.appointment_id}/patient`,
+      confirmedappointment.patient
+    );
+    if (response && response.data) {
+      successMessage.value = 'Prenotazione modificata con successo.';
+      showAppointmentDetails.value = false;
+      getAppointments();
+    }
+  } catch (error) {
+    console.error('Errore modifica prenotazione:', error);
+    errorMessage.value = error.response?.data?.error || 'Errore durante la modifica della prenotazione.';
+  }
+};
+
+onMounted(getAppointments);
 
 const goBack = () => {
   router.back();

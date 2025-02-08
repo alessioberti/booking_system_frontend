@@ -77,14 +77,14 @@
       <ul role="list" class="divide-y divide-gray-200">
         <li
           v-for="slot in groupedSlots[selectedDate]"
-          :key="slot.operator_availability_slot_start"
-          @click="openAppointmentDetailsModal(slot)"
+          :key="slot.appointment_time_start"
+          @click="openAppointmentDetails(slot)"
           class="slot-item cursor-pointer hover:bg-gray-100"
         >
           <div>
             <div class="text-md font-semibold text-gray-900">
-              <div>Ora inizio: {{ slot.availability_slot_start }}</div>
-              <div>Ora fine: {{ slot.availability_slot_end }}</div>
+              <div>Ora inizio: {{ slot.appointment_time_start }}</div>
+              <div>Ora fine: {{ slot.appointment_time_end }}</div>
             </div>
             <p class="mt-1 text-sm text-gray-500">{{ slot.operator_name }}</p>
           </div>
@@ -97,13 +97,13 @@
     </div>
 
     <!-- Modale per confermare la prenotazione -->
-    <BookConfirmModal
+    <AppointmentDetails
       v-if="isModalOpen"
-      :slot="selectedSlot"
-      :selectedDate="selectedDate"
-      :examName="examName"
       @close="closeModal"
-      @confirm="handleConfirmBooking"
+      @confirm="saveAppointment"
+      :bookingData="selectedSlot"
+      :patientData="defaultPatientData"
+      :examName="examName"
     />
   </div>
 </template>
@@ -113,6 +113,7 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../services/api';
 import { useViewDataStore } from '../stores/viewData';
+import AppointmentDetails from '../components/AppointmentDetails.vue';
 
 const router = useRouter();
 const viewDataStore = useViewDataStore();
@@ -133,7 +134,7 @@ const filters = ref({
   operatorId: '',
   laboratoryId: '',
 });
-
+const defaultPatientData = ref({});
 const operators = ref([]);
 const laboratories = ref([]);
 const nextCursor = ref(null);
@@ -180,7 +181,7 @@ const formatSelectedDate = (dateStr) => {
 };
 
 // ruchiama available slots e aggiorna le variabili reattive
-const fetchSlots = async () => {
+const getAvailableSlots = async () => {
   try {
     const params = {
       datetime_from_filter: fromDatetime.value,
@@ -192,7 +193,7 @@ const fetchSlots = async () => {
     // se è già stata selezionata una data la aggiunge ai parametri
     if (selectedDate.value) params.page_date = selectedDate.value;
 
-    const response = await api.get(`/exam/${examTypeId.value}/available-slots`, { params });
+    const response = await api.get(`/exams/${examTypeId.value}/available-slots`, { params });
     const data = response.data;
 
     // aggiorna le date disponibili e i cursori e le liste dei filtri
@@ -213,20 +214,20 @@ const fetchSlots = async () => {
       groupedSlots.value[selectedDate.value] = data.slots || [];
     }
   } catch (error) {
-    console.error('Errore nel fetch degli slot:', error);
+    console.error('Failed to get Available slots:', error);
   }
 };
 
 // ricarica gli slot e filtri quando cambia la data selezionata
 const selectDate = (date) => {
   selectedDate.value = date;
-  fetchSlots();
+  getAvailableSlots();
 };
 
 // ricarica gli slot e filtri quando cambiano i filtri
 const applyFilters = () => {
   selectedDate.value = currentDates.value.length > 0 ? currentDates.value[0] : '';
-  fetchSlots();
+  getAvailableSlots();
 };
 
 // passa a al prossimo mese
@@ -235,7 +236,7 @@ const nextMonth = () => {
     fromDatetime.value = nextCursor.value;
     toDatetime.value = addMonthsToIso(fromDatetime.value, 1);
     selectedDate.value = ''; // reset della data selezionata
-    fetchSlots();
+    getAvailableSlots();
   }
 };
 
@@ -245,7 +246,7 @@ const prevMonth = () => {
     fromDatetime.value = prevCursor.value;
     toDatetime.value = addMonthsToIso(fromDatetime.value, 1);
     selectedDate.value = '';
-    fetchSlots();
+    getAvailableSlots();
   }
 };
 
@@ -255,8 +256,10 @@ const goToExamList = () => {
 };
 
 // apri un modale per inserire i dati paziente e confermare la prenotazione
-const openAppointmentDetailsModal = (slot) => {
+const openAppointmentDetails = async (slot) => {
   selectedSlot.value = slot;
+  console.log('selectedSlot', selectedSlot.value);
+  await getDefaultPatientData();
   isModalOpen.value = true;
 };
 
@@ -266,13 +269,27 @@ const closeModal = () => {
   selectedSlot.value = null;
 };
 
-// Gestione della conferma della prenotazione
-const handleConfirmBooking = async (bookingData) => {
+// recupera le informazioni del paziente di default
+const getDefaultPatientData = async () => {
   try {
-    await api.post('/book_slot', bookingData);
+    const response = await api.get('/account/patient');
+    if (response && response.data) {
+      defaultPatientData.value = response.data;
+    } else {
+      defaultPatientData.value = {};
+    }
+  } catch (error) {
+    console.error(': Unable to get default patient data ', error);
+  }
+};
+
+// alla chisura del modale invia al backend le informazioni del paziente e della prenotazione
+const saveAppointment = async (confirmedAppointment) => {
+  try {
+    await api.post('/appointment', confirmedAppointment);
     alert('Prenotazione completata con successo!');
     closeModal();
-    fetchSlots();
+    getAvailableSlots();
   } catch (error) {
     console.error('Errore nella prenotazione:', error);
     alert('Errore nella prenotazione. Riprova più tardi.');
@@ -282,7 +299,7 @@ const handleConfirmBooking = async (bookingData) => {
 
 onMounted(() => {
   initializeDateRange();
-  fetchSlots();
+  getAvailableSlots();
 });
 </script>
 

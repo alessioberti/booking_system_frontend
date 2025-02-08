@@ -2,10 +2,10 @@
   <div class="flex min-h-full items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
     <div class="w-full max-w-sm space-y-10">
       <div>
-        <h2 class="text-center text-2xl font-bold tracking-tight text-gray-900">Sign in to your account</h2>
+        <h2 class="text-center text-2xl font-bold tracking-tight text-gray-900">Centro Medico Login</h2>
       </div>
 
-      <form class="space-y-6" @submit.prevent="handleLogin">
+      <form class="space-y-6" @submit.prevent="UserLogin">
         <div class="space-y-4">
           <div>
             <input id="email" type="text" class="input" v-model="email" required placeholder="Inserisci la tua email" />
@@ -23,7 +23,7 @@
         </div>
 
         <div>
-          <button type="submit" class="button" :disabled="loading">Sign in</button>
+          <button type="submit" class="button">Sign in</button>
         </div>
       </form>
 
@@ -53,7 +53,7 @@ const errorMessage = ref(null);
 const authStore = useAuthStore();
 const router = useRouter();
 
-const handleLogin = async () => {
+const UserLogin = async () => {
   errorMessage.value = null;
   try {
     await authStore.login(email.value, password.value);

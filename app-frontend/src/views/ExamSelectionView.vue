@@ -36,7 +36,6 @@
     <p v-if="errorMessage" class="text-red-600 text-sm mt-4">
       {{ errorMessage }}
     </p>
-    <p v-if="loading" class="text-gray-600 text-sm mt-4">Caricamento in corso...</p>
   </div>
 </template>
 
@@ -53,15 +52,13 @@ const examTypes = ref([]);
 const currentPage = ref(1);
 const totalPages = ref(1);
 const perPage = ref(10);
-const loading = ref(false);
 const errorMessage = ref(null);
 
 // Recuperare gli esami dal backend
-const fetchExamTypes = async () => {
-  loading.value = true;
+const getExams = async () => {
   errorMessage.value = null;
   try {
-    const response = await api.get('/exam', {
+    const response = await api.get('/exams', {
       params: {
         page: currentPage.value,
         per_page: perPage.value,
@@ -71,10 +68,8 @@ const fetchExamTypes = async () => {
     totalPages.value = response.data.pages;
     examTypes.value = response.data.data;
   } catch (err) {
-    console.error('Errore caricamento exam_types', err);
+    console.error('Unable to get exams', err);
     errorMessage.value = 'Errore durante il caricamento degli esami';
-  } finally {
-    loading.value = false;
   }
 };
 
@@ -82,14 +77,14 @@ const fetchExamTypes = async () => {
 const prevPage = () => {
   if (currentPage.value > 1) {
     currentPage.value--;
-    fetchExamTypes();
+    getExams();
   }
 };
 
 const nextPage = () => {
   if (currentPage.value < totalPages.value) {
     currentPage.value++;
-    fetchExamTypes();
+    getExams();
   }
 };
 
@@ -105,7 +100,7 @@ const goToHome = () => {
 };
 
 // Carica gli esami al montaggio della view
-fetchExamTypes();
+getExams();
 </script>
 
 <style scoped></style>

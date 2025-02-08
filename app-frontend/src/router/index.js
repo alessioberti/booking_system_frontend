@@ -5,6 +5,7 @@ import Home from '../views/HomeView.vue';
 import ExamSelection from '../views/ExamSelectionView.vue';
 import SlotSelection from '../views/SlotSelectionView.vue';
 import Appointments from '../views/AppointmentsView.vue';
+import RegisterView from '../views/RegisterView.vue';
 import { useAuthStore } from '../stores/auth';
 
 const routes = [
@@ -14,7 +15,7 @@ const routes = [
     children: [
       { path: '', name: 'home', component: Home },
       { path: '/login', name: 'login', component: LoginView },
-      //{ path: '/register', name: 'register', component: RegisterView },
+      { path: '/register', name: 'register', component: RegisterView },
       { path: '/appointments', name: 'appointments', component: Appointments, meta: { requiresAuth: true } },
       { path: '/exam-selection', name: 'exam-selection', component: ExamSelection, meta: { requiresAuth: true } },
       { path: '/slot-selection', name: 'slot-selection', component: SlotSelection, meta: { requiresAuth: true } },
@@ -28,7 +29,7 @@ const router = createRouter({
   routes,
 });
 
-// guardia per il router: se /mylogin non restituisce l'utente, vai alla pagina di login
+// guardia per il router: se /account non restituisce l'utente, vai alla pagina di login
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
   if (to.meta.requiresAuth) {
