@@ -27,7 +27,7 @@
           <div class="mb-4 lg:grid lg:grid-cols-2">
             <div class="modal-info">
               <strong>Esame:&nbsp;</strong>
-              {{ appointment.exam_type_name }} ({{ appointment.operator_name }})
+              {{ appointment.service_name }} ({{ appointment.operator_name }})
             </div>
             <div class="modal-info">
               <strong>Paziente:&nbsp;</strong>
@@ -44,16 +44,16 @@
             </div>
             <div class="modal-info">
               <strong>Presso:&nbsp;</strong>
-              {{ appointment.laboratory_name }}
+              {{ appointment.location_name }}
             </div>
             <div class="modal-info">
               <strong>Indirizzo:&nbsp;</strong>
-              {{ appointment.laboratory_address }}
+              {{ appointment.location_address }}
             </div>
             <div class="modal-info">
               <strong>Tel:&nbsp;</strong>
-              <a class="hover:underline hover:text-blue-600" :href="`tel:${appointment.laboratory_tel_number}`">{{
-                appointment.laboratory_tel_number
+              <a class="hover:underline hover:text-blue-600" :href="`tel:${appointment.location_tel_number}`">{{
+                appointment.location_tel_number
               }}</a>
             </div>
             <div class="modal-info">
@@ -144,7 +144,7 @@
       @confirm="updateAppointment"
       :bookingData="appointmentToEdit"
       :patientData="patientToEdit"
-      :examName="appointmentToEdit?.exam_type_name"
+      :serviceName="appointmentToEdit?.service_name"
       :appointmentInfo="appointmentToEdit?.info"
     />
   </div>

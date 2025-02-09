@@ -2,8 +2,8 @@
   <div class="box-container">
     <!-- Header -->
     <div class="flex items-center mb-4">
-      <button class="button-back mr-6" @click="goToExamList">Indietro</button>
-      <h2 class="title-page">Disponibilità per {{ examName }}</h2>
+      <button class="button-back mr-6" @click="goToServiceList">Indietro</button>
+      <h2 class="title-page">Disponibilità per {{ serviceName }}</h2>
     </div>
     <hr />
 
@@ -20,11 +20,11 @@
       </div>
 
       <div class="w-full sm:w-1/2">
-        <label for="laboratory" class="block text-md font-medium text-gray-700 mb-1">Laboratorio</label>
-        <select id="laboratory" v-model="filters.laboratoryId" class="select" @change="applyFilters">
+        <label for="location" class="block text-md font-medium text-gray-700 mb-1">Laboratorio</label>
+        <select id="location" v-model="filters.locationId" class="select" @change="applyFilters">
           <option value="">-- Tutti --</option>
-          <option v-for="lab in laboratories" :key="lab.laboratory_id" :value="lab.laboratory_id">
-            {{ lab.name }}
+          <option v-for="location in locations" :key="location.location_id" :value="location.location_id">
+            {{ location.name }}
           </option>
         </select>
       </div>
@@ -89,8 +89,8 @@
             <p class="mt-1 text-sm text-gray-500">{{ slot.operator_name }}</p>
           </div>
           <div class="text-md text-gray-700">
-            {{ slot.laboratory_name }}
-            <p class="text-sm text-gray-500">{{ slot.laboratory_address }}</p>
+            {{ slot.location_name }}
+            <p class="text-sm text-gray-500">{{ slot.location_address }}</p>
           </div>
         </li>
       </ul>
@@ -103,7 +103,7 @@
       @confirm="saveAppointment"
       :bookingData="selectedSlot"
       :patientData="defaultPatientData"
-      :examName="examName"
+      :serviceName="serviceName"
     />
   </div>
 </template>
@@ -118,13 +118,13 @@ import AppointmentDetails from '../components/AppointmentDetails.vue';
 const router = useRouter();
 const viewDataStore = useViewDataStore();
 
-if (!viewDataStore.getData('selectedExam')) {
-  router.push({ name: 'exam-selection' });
+if (!viewDataStore.getData('selectedService')) {
+  router.push({ name: 'service-selection' });
 }
 
-const selectedExam = computed(() => viewDataStore.getData('selectedExam'));
-const examName = computed(() => (selectedExam.value ? selectedExam.value.name : ''));
-const examTypeId = computed(() => (selectedExam.value ? selectedExam.value.exam_type_id : null));
+const selectedService = computed(() => viewDataStore.getData('selectedService'));
+const serviceName = computed(() => (selectedService.value ? selectedService.value.name : ''));
+const serviceTypeId = computed(() => (selectedService.value ? selectedService.value.service_id : null));
 const fromDatetime = ref('');
 const toDatetime = ref('');
 const currentDates = ref([]);
@@ -132,11 +132,11 @@ const groupedSlots = ref({});
 const selectedDate = ref('');
 const filters = ref({
   operatorId: '',
-  laboratoryId: '',
+  locationId: '',
 });
 const defaultPatientData = ref({});
 const operators = ref([]);
-const laboratories = ref([]);
+const locations = ref([]);
 const nextCursor = ref(null);
 const prevCursor = ref(null);
 const isModalOpen = ref(false);
@@ -189,11 +189,11 @@ const getAvailableSlots = async () => {
     };
     // aggiungi filtri operator e laboratorio se presenti
     if (filters.value.operatorId) params.operator_id = filters.value.operatorId;
-    if (filters.value.laboratoryId) params.laboratory_id = filters.value.laboratoryId;
+    if (filters.value.locationId) params.location_id = filters.value.locationId;
     // se è già stata selezionata una data la aggiunge ai parametri
     if (selectedDate.value) params.page_date = selectedDate.value;
 
-    const response = await api.get(`/exams/${examTypeId.value}/available-slots`, { params });
+    const response = await api.get(`/services/${serviceTypeId.value}/available-slots`, { params });
     const data = response.data;
 
     // aggiorna le date disponibili e i cursori e le liste dei filtri
@@ -201,7 +201,7 @@ const getAvailableSlots = async () => {
     nextCursor.value = data.next_cursor_datetime;
     prevCursor.value = data.prev_cursor_datetime;
     operators.value = data.operators || [];
-    laboratories.value = data.laboratories || [];
+    locations.value = data.locations || [];
 
     // se non è già stata selezionata una data seleziona la prima (se non fosse usato il backend comunque restiuscie la prima data)
     if (!selectedDate.value && currentDates.value.length > 0) {
@@ -251,8 +251,8 @@ const prevMonth = () => {
 };
 
 // torna alla selezione dell'esame
-const goToExamList = () => {
-  router.push({ name: 'exam-selection' });
+const goToServiceList = () => {
+  router.push({ name: 'service-selection' });
 };
 
 // apri un modale per inserire i dati paziente e confermare la prenotazione

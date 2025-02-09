@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import MainLayout from '../components/MainLayout.vue';
 import LoginView from '../views/LoginView.vue';
 import Home from '../views/HomeView.vue';
-import ExamSelection from '../views/ExamSelectionView.vue';
+import ServiceSelection from '../views/ServiceSelectionView.vue';
 import SlotSelection from '../views/SlotSelectionView.vue';
 import Appointments from '../views/AppointmentsView.vue';
 import RegisterView from '../views/RegisterView.vue';
@@ -17,7 +17,7 @@ const routes = [
       { path: '/login', name: 'login', component: LoginView },
       { path: '/register', name: 'register', component: RegisterView },
       { path: '/appointments', name: 'appointments', component: Appointments, meta: { requiresAuth: true } },
-      { path: '/exam-selection', name: 'exam-selection', component: ExamSelection, meta: { requiresAuth: true } },
+      { path: '/service-selection', name: 'service-selection', component: ServiceSelection, meta: { requiresAuth: true } },
       { path: '/slot-selection', name: 'slot-selection', component: SlotSelection, meta: { requiresAuth: true } },
       
     ],

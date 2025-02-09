@@ -10,19 +10,19 @@
 
     <!-- gestisci come pagina per mobile e come modale all'80% per gli schemi medi e in su-->
     <div class="bg-white p-6 md:rounded-lg shadow-lg w-[100%] md:w-[80%] max-h-screen overflow-y-auto">
-      <h2 class="title-page mb-4">Prenotazione per: {{ props.examName }}</h2>
+      <h2 class="title-page mb-4">Prenotazione per: {{ props.serviceName }}</h2>
       <div class="mb-4 lg:grid lg:grid-cols-2">
         <div class="modal-info"><strong>Data:&nbsp; </strong> {{ formattedDate }}</div>
         <div class="modal-info">
           <strong>Orario:&nbsp;</strong> {{ props.bookingData.appointment_time_start }} -
           {{ props.bookingData.appointment_time_end }}
         </div>
-        <div class="modal-info"><strong>Presso:&nbsp; </strong> {{ props.bookingData.laboratory_name }}</div>
-        <div class="modal-info"><strong>Indirizzo:&nbsp;</strong> {{ props.bookingData.laboratory_address }}</div>
+        <div class="modal-info"><strong>Presso:&nbsp; </strong> {{ props.bookingData.location_name }}</div>
+        <div class="modal-info"><strong>Indirizzo:&nbsp;</strong> {{ props.bookingData.location_address }}</div>
         <div class="modal-info">
           <strong>Tel:&nbsp;</strong>
-          <a class="hover:underline hover:text-blue-600" :href="'tel:${props.bookingData.laboratory_tel_number}'">
-            {{ props.bookingData.laboratory_tel_number }}</a
+          <a class="hover:underline hover:text-blue-600" :href="'tel:${props.bookingData.location_tel_number}'">
+            {{ props.bookingData.location_tel_number }}</a
           >
         </div>
         <div class="modal-info">{{ props.bookingData.operator_name }}</div>
@@ -137,7 +137,7 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-  examName: {
+  serviceName: {
     type: String,
     required: true,
   },

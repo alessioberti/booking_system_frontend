@@ -8,14 +8,14 @@
     <!-- Lista degli esami -->
     <ul role="list" class="divide-y divide-gray-200">
       <li
-        v-for="exam in examTypes"
-        :key="exam.exam_type_id"
-        @click="selectExam(exam)"
+        v-for="service in serviceTypes"
+        :key="service.service_id"
+        @click="selectService(service)"
         class="slot-item cursor-pointer hover:bg-gray-100"
       >
         <div>
-          <p class="text-md font-semibold text-gray-900">{{ exam.name }}</p>
-          <p class="mt-1 text-sm text-gray-500">{{ exam.description }}</p>
+          <p class="text-md font-semibold text-gray-900">{{ service.name }}</p>
+          <p class="mt-1 text-sm text-gray-500">{{ service.description }}</p>
         </div>
         <div class="text-md text-gray-700">Clicca per selezionare</div>
       </li>
@@ -48,17 +48,17 @@ import { useViewDataStore } from '../stores/viewData';
 // Definizione delle variabili reattive
 const router = useRouter();
 const viewDataStore = useViewDataStore();
-const examTypes = ref([]);
+const serviceTypes = ref([]);
 const currentPage = ref(1);
 const totalPages = ref(1);
 const perPage = ref(10);
 const errorMessage = ref(null);
 
 // Recuperare gli esami dal backend
-const getExams = async () => {
+const getServices = async () => {
   errorMessage.value = null;
   try {
-    const response = await api.get('/exams', {
+    const response = await api.get('/services', {
       params: {
         page: currentPage.value,
         per_page: perPage.value,
@@ -66,9 +66,9 @@ const getExams = async () => {
     });
     currentPage.value = response.data.page;
     totalPages.value = response.data.pages;
-    examTypes.value = response.data.data;
+    serviceTypes.value = response.data.data;
   } catch (err) {
-    console.error('Unable to get exams', err);
+    console.error('Unable to get services', err);
     errorMessage.value = 'Errore durante il caricamento degli esami';
   }
 };
@@ -77,20 +77,20 @@ const getExams = async () => {
 const prevPage = () => {
   if (currentPage.value > 1) {
     currentPage.value--;
-    getExams();
+    getServices();
   }
 };
 
 const nextPage = () => {
   if (currentPage.value < totalPages.value) {
     currentPage.value++;
-    getExams();
+    getServices();
   }
 };
 
 // Salva l'esame selezionato nello store e passa alla selezione degli slot
-const selectExam = (exam) => {
-  viewDataStore.setData('selectedExam', exam);
+const selectService = (service) => {
+  viewDataStore.setData('selectedService', service);
   router.push({ name: 'slot-selection' });
 };
 
@@ -100,7 +100,7 @@ const goToHome = () => {
 };
 
 // Carica gli esami al montaggio della view
-getExams();
+getServices();
 </script>
 
 <style scoped></style>
