@@ -25,7 +25,7 @@ export const useAuthStore = defineStore('auth', {
 
     // richiedi blocklist del token (effettua il logout)
     logout() {
-      axios.post('/logout', {})
+      api.post('/logout', {})
         .catch((err) => {
           console.error('Errore durante il logout:', err);
         });

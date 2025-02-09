@@ -113,7 +113,9 @@
             />
           </div>
         </div>
-
+        <p>
+          Se non possiedi un codice fiscale italiano, inserisci il numero del tuo documento di identità o passaporto.
+        </p>
         <div>
           <button type="submit" class="button">Registrati</button>
         </div>

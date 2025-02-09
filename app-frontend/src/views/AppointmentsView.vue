@@ -120,12 +120,12 @@
         <h3 class="text-lg font-semibold mb-4">Modifica Appuntamento</h3>
         <p class="text-gray-700 text-sm mb-4">
           Vuoi modificare la prenotazione del
-          <strong>{{ formatDate(appointment?.appointment_date) }}</strong>
+          <strong>{{ formatDate(appointmentToEdit?.appointment_date) }}</strong>
           dalle
-          <strong>{{ formatTime(appointment?.appointment_time_start) }}</strong>
+          <strong>{{ formatTime(appointmentToEdit?.appointment_time_start) }}</strong>
           alle
-          <strong>{{ formatTime(appointment?.appointment_time_end) }}</strong>
-          di <strong>{{ appointment?.patient_name }}</strong
+          <strong>{{ formatTime(appointmentToEdit?.appointment_time_end) }}</strong>
+          di <strong>{{ appointmentToEdit?.patient_name }}</strong
           >?
         </p>
         <div class="mt-4 flex center gap-4">
@@ -141,7 +141,7 @@
     <appointmentDetails
       v-if="showAppointmentDetails"
       @close="closeappointmentModal"
-      @confirm="updateBookingDetails"
+      @confirm="updateAppointment"
       :bookingData="appointmentToEdit"
       :patientData="patientToEdit"
       :examName="appointmentToEdit?.exam_type_name"
@@ -263,6 +263,7 @@ const openEditModal = (appointment) => {
 
 const closeEditModal = () => {
   showEditModal.value = false;
+
   appointmentToEdit.value = null;
 };
 
@@ -274,7 +275,7 @@ const openAppointmentDetails = async () => {
 
 const getAppointmentPatientData = async () => {
   try {
-    const response = await api.get(`/appointments/${appointment.value.appointment_id}/patient`);
+    const response = await api.get(`/appointments/${appointmentToEdit.value.appointment_id}/patient`);
     if (response && response.data) {
       patientToEdit.value = response.data;
     } else {
@@ -287,26 +288,34 @@ const getAppointmentPatientData = async () => {
 
 const closeappointmentModal = () => {
   showAppointmentDetails.value = false;
-  appointment.value = null;
+  appointmentToEdit.value = null;
 };
 
 const editappointmentDatetime = () => {
   // da implementare
 };
 
-const updateBookingDetails = async (confirmedappointment) => {
+const updateAppointment = async (confirmedAppointment) => {
   try {
     errorMessage.value = '';
     successMessage.value = '';
-    const response = await api.put(
-      `/appointment/${appointment.value.appointment_id}/patient`,
-      confirmedappointment.patient
-    );
-    if (response && response.data) {
-      successMessage.value = 'Prenotazione modificata con successo.';
-      showAppointmentDetails.value = false;
-      getAppointments();
+    // se il era di default ma è richiesto un nuovo paziente crea un nuovo paziente e lo associa alla prenotazione
+    if (confirmedAppointment.patient.is_default === false && appointmentToEdit.value.is_default === true) {
+      await api.post(`/appointments/${appointmentToEdit.value.appointment_id}/new_patient`, {
+        patient: confirmedAppointment.patient,
+      });
+      // se il paziente non era di default e sono stati cambiati i dati
+    } else if (confirmedAppointment.patient.is_default === false) {
+      await api.put(`/appointments/${appointmentToEdit.value.appointment_id}/patient`, confirmedAppointment);
     }
+    // se sono stati cambiate le note della prenotazione
+    if (confirmedAppointment.info !== appointmentToEdit.value.info) {
+      await api.put(`/appointments/${appointmentToEdit.value.appointment_id}/info`, {
+        info: confirmedAppointment.appointment.info,
+      });
+    }
+    closeappointmentModal();
+    getAppointments();
   } catch (error) {
     console.error('Errore modifica prenotazione:', error);
     errorMessage.value = error.response?.data?.error || 'Errore durante la modifica della prenotazione.';

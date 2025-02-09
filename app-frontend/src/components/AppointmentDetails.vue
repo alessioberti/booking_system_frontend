@@ -1,5 +1,13 @@
 <template>
   <div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+    <!-- alert per conferme e errori -->
+    <div v-if="errorMessage" class="alert-error" role="alert">
+      {{ errorMessage }}
+    </div>
+    <div v-if="successMessage" class="alert-success" role="alert">
+      {{ successMessage }}
+    </div>
+
     <!-- gestisci come pagina per mobile e come modale all'80% per gli schemi medi e in su-->
     <div class="bg-white p-6 md:rounded-lg shadow-lg w-[100%] md:w-[80%] max-h-screen overflow-y-auto">
       <h2 class="title-page mb-4">Prenotazione per: {{ props.examName }}</h2>
@@ -13,7 +21,7 @@
         <div class="modal-info"><strong>Indirizzo:&nbsp;</strong> {{ props.bookingData.laboratory_address }}</div>
         <div class="modal-info">
           <strong>Tel:&nbsp;</strong>
-          <a class="hover:underline hover:text-blue-600" :href="`tel:${props.bookingData.laboratory_tel_number}`">
+          <a class="hover:underline hover:text-blue-600" :href="'tel:${props.bookingData.laboratory_tel_number}'">
             {{ props.bookingData.laboratory_tel_number }}</a
           >
         </div>
@@ -97,7 +105,10 @@
         </div>
       </div>
       <div class="mt-4 mb-4">
-        <button v-if="useDefault" @click="bookForAnother" class="button">Prenota per un altro paziente</button>
+        <button v-if="useDefault" @click="bookForAnother" class="button">Modifica i dati Paziente</button>
+        <p v-else>
+          Se non possiedi un codice fiscale italiano, inserisci il numero del tuo documento di identità o passaporto.
+        </p>
       </div>
       <div class="mb-4">
         <label for="appointmentInfo" class="label">Note</label>
@@ -159,11 +170,16 @@ const email = ref('');
 const telNumber = ref('');
 const fiscalcode = ref('');
 const birthdate = ref('');
-const appointmentInfo = ref('');
+const appointmentInfo = ref(props.appointmentInfo);
 const useDefault = ref(true);
+
+// Messaggi di errore
+const errorMessage = ref('');
+const successMessage = ref('');
 
 // Inizializza il form con i dati del paziente se disponibili
 const initForm = () => {
+  errorMessage.value = '';
   if (props.patientData) {
     firstName.value = props.patientData.first_name;
     lastName.value = props.patientData.last_name;
@@ -212,32 +228,28 @@ const confirmBooking = () => {
     !birthdate.value.trim() ||
     !telNumber.value.trim()
   ) {
-    alert('Attenzione: tutti i campi sono obbligatori');
+    errorMessage.value = 'Tutti i campi sono obbligatori';
     return;
   }
-  if (useDefault.value === true) {
-    patient = {
-      is_default: true,
-    };
-  } else {
-    patient = {
-      is_default: false,
-      first_name: firstName.value,
-      last_name: lastName.value,
-      email: email.value,
-      tel_number: telNumber.value,
-      fiscalcode: fiscalcode.value,
-      birthdate: birthdate.value,
-    };
-  }
-  appointment = {
-    availability_id: props.bookingData.availability_id,
-    appointment_date: props.bookingData.appointment_date,
-    appointment_time_start: props.bookingData.appointment_time_start,
-    appointment_time_end: props.bookingData.appointment_time_end,
-    info: props.appointmentInfo.value,
-  };
+
+  // crea un oggetto paziente sovrascrivendo i dati se sono stati modificati
+  patient = props.patientData;
+  patient.first_name = firstName.value;
+  patient.last_name = lastName.value;
+  patient.email = email.value;
+  patient.tel_number = telNumber.value;
+  patient.fiscal_code = fiscalcode.value;
+  patient.birth_date = birthdate.value;
+  patient.is_default = useDefault.value;
+
+  // crea un oggetto prenotazione sovrascrivendo le note se sono state modificate
+  appointment = props.bookingData;
+  appointment.info = appointmentInfo.value;
+
+  // crea un oggetto payload con i dati del paziente e della prenotazione
   const confirmedAppointment = { patient, appointment };
+
+  // ritorna alla view precedente con i dati della prenotazione confermati
   emit('confirm', confirmedAppointment);
 };
 </script>
