@@ -2,18 +2,14 @@
   <div class="box-container">
     <h2 class="title-page">Le mie Prenotazioni</h2>
 
-    <!-- Alert per conferme e errori -->
-    <div v-if="errorMessage" class="alert-error" role="alert">
-      {{ errorMessage }}
-    </div>
-    <div v-if="successMessage" class="alert-success" role="alert">
-      {{ successMessage }}
-    </div>
-
     <!-- mostra messaggio in caso non siano prenotazioni-->
-    <div v-if="appointments.length === 0" class="text-center">
-      <p class="text-gray-500">Non hai ancora prenotazioni.</p>
-      <button @click="goBack" class="button-back">Indietro</button>
+    <div v-if="appointments.length === 0">
+      <div class="flex justify-left mt-6">
+        <p class="text-standard">Non hai ancora effettuato prenotazioni.</p>
+      </div>
+      <div class="flex justify-left mt-6">
+        <button @click="goBack" class="button-back">Indietro</button>
+      </div>
     </div>
 
     <!-- altrimenti stampa la lista delle prenotazioni -->
@@ -52,7 +48,7 @@
             </div>
             <div class="modal-info">
               <strong>Tel:&nbsp;</strong>
-              <a class="hover:underline hover:text-blue-600" :href="`tel:${appointment.location_tel_number}`">{{
+              <a class="hover:underline hover:text-primary" :href="`tel:${appointment.location_tel_number}`">{{
                 appointment.location_tel_number
               }}</a>
             </div>
@@ -88,7 +84,7 @@
         </button>
       </div>
 
-      <div class="flex justify-center mt-6">
+      <div class="flex justify-left mt-6">
         <button @click="goBack" class="button-back">Indietro</button>
       </div>
     </div>
@@ -155,15 +151,17 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../services/api';
 import appointmentDetails from '../components/AppointmentDetails.vue';
+// gestione degli alert in tramite pinia e composizione
+import { useAlertStore } from '../stores/alert';
+const alertStore = useAlertStore();
 
+// Dichiarazione delle variabili reattive
 const router = useRouter();
 
 // Dichiarazione dei singoli ref
 const appointments = ref([]);
 const currentPage = ref(1);
 const totalPages = ref(1);
-const errorMessage = ref('');
-const successMessage = ref('');
 const showCancelModal = ref(false);
 const appointmentToCancel = ref(null);
 const showEditModal = ref(false);
@@ -192,8 +190,7 @@ function formatTime(timeStr) {
 // Funzione per recuperare le prenotazioni
 const getAppointments = async () => {
   try {
-    errorMessage.value = '';
-    successMessage.value = '';
+    alertStore.clearAlerts();
     const resp = await api.get('/appointments', {
       withCredentials: true,
       params: { page: currentPage.value, per_page: 10 },
@@ -203,7 +200,7 @@ const getAppointments = async () => {
     appointments.value = resp.data.data;
   } catch (err) {
     console.error('Unable to get appointments:', err);
-    errorMessage.value = 'Errore durante il recupero delle prenotazioni.';
+    alertStore.setError('Errore durante il recupero delle prenotazioni');
   }
 };
 
@@ -224,8 +221,7 @@ const nextPage = () => {
 
 // Funzioni per gestire il modale di cancellazione
 const openCancelModal = (appointment) => {
-  errorMessage.value = '';
-  successMessage.value = '';
+  alertStore.clearAlerts();
   appointmentToCancel.value = appointment;
   showCancelModal.value = true;
 };
@@ -238,16 +234,16 @@ const closeCancelModal = () => {
 const cancelappointmentConfirmed = async () => {
   if (!appointmentToCancel.value) return;
   try {
-    errorMessage.value = '';
-    successMessage.value = '';
+    alertStore.clearAlerts();
     // Esegui la chiamata per annullare l'appuntamento
-    await api.put(`/appointment/${appointmentToCancel.value.appointment_id}/reject`);
+    await api.put(`/appointments/${appointmentToCancel.value.appointment_id}/reject`);
+    // per migliorare l'esperienza utente in caso di successo facendo prima sparire il modale
+    // e impostando manualmente lo stato dell'appuntamento
     showCancelModal.value = false;
     appointmentToCancel.value.rejected = true;
-    successMessage.value = 'Prenotazione annullata con successo.';
+    alertStore.setSuccess('Prenotazione annullata con successo.');
   } catch (err) {
-    console.error('Errore annullamento prenotazione:', err);
-    errorMessage.value = err.response?.data?.error || 'Errore durante la cancellazione.';
+    alertStore.setError("Si verifica un errore durante l'annullamento della prenotazione.");
   } finally {
     appointmentToCancel.value = null;
   }
@@ -255,8 +251,7 @@ const cancelappointmentConfirmed = async () => {
 
 // Funzioni per gestire il modale di modifica
 const openEditModal = (appointment) => {
-  errorMessage.value = '';
-  successMessage.value = '';
+  alertStore.clearAlerts();
   appointmentToEdit.value = appointment;
   showEditModal.value = true;
 };
@@ -282,6 +277,7 @@ const getAppointmentPatientData = async () => {
       patientToEdit.value = {};
     }
   } catch (error) {
+    alertStore.setError('Errore durante il recupero dei dati del paziente');
     console.error(': Unable to get appointment patient data ', error);
   }
 };
@@ -297,8 +293,7 @@ const editappointmentDatetime = () => {
 
 const updateAppointment = async (confirmedAppointment) => {
   try {
-    errorMessage.value = '';
-    successMessage.value = '';
+    alertStore.clearAlerts();
     // se il era di default ma è richiesto un nuovo paziente crea un nuovo paziente e lo associa alla prenotazione
     if (confirmedAppointment.patient.is_default === false && appointmentToEdit.value.is_default === true) {
       await api.post(`/appointments/${appointmentToEdit.value.appointment_id}/new_patient`, {
@@ -314,11 +309,14 @@ const updateAppointment = async (confirmedAppointment) => {
         info: confirmedAppointment.appointment.info,
       });
     }
+    alertStore.setSuccess('Prenotazione modificata con successo');
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
     closeappointmentModal();
     getAppointments();
   } catch (error) {
-    console.error('Errore modifica prenotazione:', error);
-    errorMessage.value = error.response?.data?.error || 'Errore durante la modifica della prenotazione.';
+    alertStore.setError('Errore durante la modifica della prenotazione');
+    console.error('Unable to update appointment:', error);
   }
 };
 

@@ -1,75 +1,50 @@
 import { defineStore } from 'pinia';
 import api from '../services/api';
 
-// definisci uno store per la gestione dell'autenticazione
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: null, // utente autenticato
-    error: null, 
+    user: JSON.parse(localStorage.getItem('user')) || null, 
+    error: null,
   }),
+
+  getters: {
+    isAuthenticated: (state) => !!state.user,
+  },
+
   actions: {
     async login(email, password) {
       this.error = null;
       try {
-        // richiedi un token al server 
-        const response = await api.post(
-          '/login',
-          { email, password },
-          { withCredentials: true }
-        );
-        this.user = response.data.user;
+        const response = await api.post('/login', { email, password });
+        this.user = response.data;
+        localStorage.setItem('user', JSON.stringify(this.user));
       } catch (err) {
-        this.error = err.response?.data?.error || 'Errore durante il login';
-        throw err;
-    }},
-
-    // richiedi blocklist del token (effettua il logout)
-    logout() {
-      api.post('/logout', {})
-        .catch((err) => {
-          console.error('Errore durante il logout:', err);
-        });
-      this.user = null;
-    },
-
-    // richiedi un nuovo token
-    async refreshAccessToken() {
-      try {
-        const csrfToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('csrf_refresh_token='))
-        ?.split('=')[1];
-        const response = await api.post(
-          '/refresh',
-          {},
-          { withCredentials: true,
-            headers: {
-              'X-CSRF-TOKEN': csrfToken,
-            },
-          }
-        );
-        // Se il backend restituisce eventualmente il nuovo access token (opzionale)
-        return response.data.access_token;
-      } catch (err) {
-        this.logout();
+        this.error = err.response?.data?.error || 'login error';
+        // propaga l'errore per gestirlo nel componente
         throw err;
       }
     },
 
-    // verifica credenziali e aggiorna lo stato dell'utente
+    // chiede al bakckend di sovrascrivere il token
+    async logout() {
+      try {
+        await api.post('/logout');
+      } catch (err) {
+        console.error('logout error:', err);
+      }
+      this.user = null;
+      localStorage.removeItem('user'); 
+    },
+
+    // verifica se l'utente è collegato
     async checkAuth() {
-     
       try {
         const response = await api.get('/account');
         this.user = response.data;
+        localStorage.setItem('user', JSON.stringify(this.user)); 
       } catch (err) {
-        try {
-          await this.refreshAccessToken();
-          const response = await api.get('/account');
-          this.user = response.data;
-        } catch (err) {
-          this.logout();
-        }
+        console.error('Errore durante il checkAuth:', err);
+        await this.logout();
       }
     },
   },

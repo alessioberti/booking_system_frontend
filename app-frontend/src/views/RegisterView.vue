@@ -4,14 +4,6 @@
       <div>
         <h2 class="title-page">Registra un nuovo account</h2>
       </div>
-      <!-- Alert per conferme e errori -->
-      <div v-if="errorMessage" class="alert-error" role="alert">
-        {{ errorMessage }}
-      </div>
-      <div v-if="successMessage" class="alert-success" role="alert">
-        {{ successMessage }}
-      </div>
-
       <div class="space-y-6">
         <div class="flex justify-between gap-6">
           <div class="flex-1">
@@ -42,8 +34,9 @@
               minlength="8"
               maxlength="32"
               pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,32}$"
-              placeholder="da 8 a 32 caratteri (Az-09-!@#$%_&*)"
+              placeholder="Inserisci Password"
               class="input"
+              oninvalid="this.setCustomValidity('La password deve contenere almeno 8 caratteri, una lettera maiuscola, una minuscola, un numero e un carattere speciale')"
             />
           </div>
           <div class="flex-1">
@@ -55,7 +48,7 @@
               required
               minlength="8"
               maxlength="32"
-              placeholder="Conferma la tua password"
+              placeholder="Conferma password"
               class="input"
             />
             <p v-if="passwordMismatch" class="text-red-600 text-sm">Le password non corrispondono.</p>
@@ -84,7 +77,7 @@
               v-model="telNumber"
               required
               pattern="^\+?\d{10,13}$"
-              placeholder="Inserisci telefono (es. +391234567890)"
+              placeholder="Inserisci telefono"
               class="input"
             />
           </div>
@@ -109,16 +102,15 @@
               v-model="birthDate"
               required
               placeholder="Inserisci cognome"
-              class="input"
+              class="input text-standard"
             />
           </div>
         </div>
-        <p>
+        <p class="text-standard">
           Se non possiedi un codice fiscale italiano, inserisci il numero del tuo documento di identità o passaporto.
         </p>
-        <div>
-          <button type="submit" class="button">Registrati</button>
-        </div>
+
+        <button type="submit" class="button">Registrati</button>
       </div>
     </form>
   </div>
@@ -128,6 +120,9 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../services/api';
+// gestione degli alert in tramite pinia e composizione
+import { useAlertStore } from '../stores/alert';
+const alertStore = useAlertStore();
 
 const router = useRouter();
 const email = ref('');
@@ -138,18 +133,31 @@ const firstName = ref('');
 const lastName = ref('');
 const fiscalCode = ref('');
 const birthDate = ref(null);
-const errorMessage = ref(null);
-const successMessage = ref(null);
 // verifica in tempo reale se le password corrispondono
 const passwordMismatch = computed(() => password.value !== confirmPassword.value);
 
 const RegisterNewAccount = async () => {
-  if (passwordMismatch.value) return;
+  alertStore.clearAlerts();
+  if (passwordMismatch.value) {
+    alertStore.setError('Le password non corrispondono');
+    return;
+  }
+
+  // verifica che tutti i campi siano stati inseriti
+  if (
+    !email.value ||
+    !password.value ||
+    !telNumber.value ||
+    !firstName.value ||
+    !lastName.value ||
+    !fiscalCode.value ||
+    !birthDate.value
+  ) {
+    alertStore.setError('Attenzone è necessaio insetire tutti i campi');
+    return;
+  }
 
   try {
-    errorMessage.value = null;
-    successMessage.value = null;
-
     const response = await api.post('/register', {
       email: email.value,
       password: password.value,
@@ -160,20 +168,24 @@ const RegisterNewAccount = async () => {
       birth_date: birthDate.value,
     });
 
-    // se non ci sono errori manda un messaggio aspetta 1 secondo e vai alla pagina di login
-    successMessage.value = 'Account Registrato con successo';
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // se non ci sono errori manda un messaggio aspetta  e vai alla pagina di login
+    alertStore.setSuccess('Account Registrato con successo');
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     router.push('/login');
     // altrimenti leggi l'errore e mostra un messaggio
   } catch (err) {
+    console.error('Error during registration', err);
     if (err?.response?.status === 409) {
-      errorMessage.value = 'La data inserita non è valida';
+      alertStore.setError('La data inserita non è valida');
     } else if (err?.response?.status === 422) {
-      errorMessage.value = 'Email già registrata';
+      alertStore.setError('Email già registrata');
     } else {
-      errorMessage.value = 'Errore durante la registrazione';
+      alertStore.setError('Errore durante la registrazione');
     }
   }
+};
+const goToHome = () => {
+  router.push({ name: 'home' });
 };
 </script>
 

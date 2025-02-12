@@ -1,13 +1,5 @@
 <template>
   <div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-    <!-- alert per conferme e errori -->
-    <div v-if="errorMessage" class="alert-error" role="alert">
-      {{ errorMessage }}
-    </div>
-    <div v-if="successMessage" class="alert-success" role="alert">
-      {{ successMessage }}
-    </div>
-
     <!-- gestisci come pagina per mobile e come modale all'80% per gli schemi medi e in su-->
     <div class="bg-white p-6 md:rounded-lg shadow-lg w-[100%] md:w-[80%] max-h-screen overflow-y-auto">
       <h2 class="title-page mb-4">Prenotazione per: {{ props.serviceName }}</h2>
@@ -21,7 +13,7 @@
         <div class="modal-info"><strong>Indirizzo:&nbsp;</strong> {{ props.bookingData.location_address }}</div>
         <div class="modal-info">
           <strong>Tel:&nbsp;</strong>
-          <a class="hover:underline hover:text-blue-600" :href="'tel:${props.bookingData.location_tel_number}'">
+          <a class="hover:underline hover:text-primary" :href="'tel:${props.bookingData.location_tel_number}'">
             {{ props.bookingData.location_tel_number }}</a
           >
         </div>
@@ -106,7 +98,7 @@
       </div>
       <div class="mt-4 mb-4">
         <button v-if="useDefault" @click="bookForAnother" class="button">Modifica i dati Paziente</button>
-        <p v-else>
+        <p v-else class="text-standard">
           Se non possiedi un codice fiscale italiano, inserisci il numero del tuo documento di identità o passaporto.
         </p>
       </div>
@@ -131,6 +123,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+// gestione degli alert in tramite pinia e composizione
+import { useAlertStore } from '../stores/alert';
+const alertStore = useAlertStore();
 
 const props = defineProps({
   bookingData: {
@@ -173,20 +168,16 @@ const birthdate = ref('');
 const appointmentInfo = ref(props.appointmentInfo);
 const useDefault = ref(true);
 
-// Messaggi di errore
-const errorMessage = ref('');
-const successMessage = ref('');
-
-// Inizializza il form con i dati del paziente se disponibili
+// inizialiizza il form con i dati del paziente
 const initForm = () => {
-  errorMessage.value = '';
+  alertStore.clearAlerts();
   if (props.patientData) {
-    firstName.value = props.patientData.first_name;
-    lastName.value = props.patientData.last_name;
-    email.value = props.patientData.email;
-    telNumber.value = props.patientData.tel_number;
-    fiscalcode.value = props.patientData.fiscal_code;
-    birthdate.value = props.patientData.birth_date;
+    firstName.value = props.patientData.first_name || '';
+    lastName.value = props.patientData.last_name || '';
+    email.value = props.patientData.email || '';
+    telNumber.value = props.patientData.tel_number || '';
+    fiscalcode.value = props.patientData.fiscal_code || '';
+    birthdate.value = props.patientData.birth_date || '';
     useDefault.value = props.patientData.is_default;
   } else {
     bookForAnother();
@@ -198,7 +189,7 @@ onMounted(() => {
   initForm();
 });
 
-// Funzione per "prenotare per un altro paziente" (reset del form)
+// se clicca su prenota per un altro paziente, resetta i campi del form
 const bookForAnother = () => {
   useDefault.value = false;
   firstName.value = '';
@@ -228,7 +219,7 @@ const confirmBooking = () => {
     !birthdate.value.trim() ||
     !telNumber.value.trim()
   ) {
-    errorMessage.value = 'Tutti i campi sono obbligatori';
+    alertStore.setError('Attenzione tutti i campi sono obbligatori');
     return;
   }
 

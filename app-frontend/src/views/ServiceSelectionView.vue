@@ -5,7 +5,7 @@
       <h2 class="title-page">Seleziona un esame</h2>
     </div>
 
-    <!-- Lista degli esami -->
+    <!-- Stampa la lista degli esami -->
     <ul role="list" class="divide-y divide-gray-200">
       <li
         v-for="service in serviceTypes"
@@ -21,7 +21,7 @@
       </li>
     </ul>
 
-    <!-- Paginazione -->
+    <!-- paginazione -->
     <div class="flex justify-between items-center mt-6">
       <button @click="prevPage" :class="{ 'button-disabled': currentPage === 1 }" class="button">
         <div class="flex"><< <span class="hidden-mobile ml-2">Precedente</span></div>
@@ -31,11 +31,6 @@
         <div class="flex"><span class="hidden-mobile mr-2">Successivo</span> >></div>
       </button>
     </div>
-
-    <!-- Messaggi di stato -->
-    <p v-if="errorMessage" class="text-red-600 text-sm mt-4">
-      {{ errorMessage }}
-    </p>
   </div>
 </template>
 
@@ -44,6 +39,9 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../services/api';
 import { useViewDataStore } from '../stores/viewData';
+// gestione degli alert in tramite pinia e composizione
+import { useAlertStore } from '../stores/alert';
+const alertStore = useAlertStore();
 
 // Definizione delle variabili reattive
 const router = useRouter();
@@ -52,11 +50,10 @@ const serviceTypes = ref([]);
 const currentPage = ref(1);
 const totalPages = ref(1);
 const perPage = ref(10);
-const errorMessage = ref(null);
 
 // Recuperare gli esami dal backend
 const getServices = async () => {
-  errorMessage.value = null;
+  alertStore.clearAlerts();
   try {
     const response = await api.get('/services', {
       params: {
@@ -69,7 +66,7 @@ const getServices = async () => {
     serviceTypes.value = response.data.data;
   } catch (err) {
     console.error('Unable to get services', err);
-    errorMessage.value = 'Errore durante il caricamento degli esami';
+    alertStore.setError('Errore durante il caricamento degli esami');
   }
 };
 
@@ -103,4 +100,4 @@ const goToHome = () => {
 getServices();
 </script>
 
-<style scoped></style>
+<style></style>

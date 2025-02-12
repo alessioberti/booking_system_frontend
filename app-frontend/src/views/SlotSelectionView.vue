@@ -1,6 +1,5 @@
 <template>
   <div class="box-container">
-    <!-- Header -->
     <div class="flex items-center mb-4">
       <button class="button-back mr-6" @click="goToServiceList">Indietro</button>
       <h2 class="title-page">Disponibilità per {{ serviceName }}</h2>
@@ -109,11 +108,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../services/api';
 import { useViewDataStore } from '../stores/viewData';
 import AppointmentDetails from '../components/AppointmentDetails.vue';
+// gestione degli alert in tramite pinia e composizione
+import { useAlertStore } from '../stores/alert';
+const alertStore = useAlertStore();
 
 const router = useRouter();
 const viewDataStore = useViewDataStore();
@@ -142,6 +144,7 @@ const prevCursor = ref(null);
 const isModalOpen = ref(false);
 const selectedSlot = ref(null);
 
+// calcola il nome del mese e l'anno corrente
 const currentMonthName = computed(() => {
   if (!fromDatetime.value) return '';
   const date = new Date(fromDatetime.value);
@@ -182,6 +185,7 @@ const formatSelectedDate = (dateStr) => {
 
 // ruchiama available slots e aggiorna le variabili reattive
 const getAvailableSlots = async () => {
+  alertStore.clearAlerts();
   try {
     const params = {
       datetime_from_filter: fromDatetime.value,
@@ -214,6 +218,7 @@ const getAvailableSlots = async () => {
       groupedSlots.value[selectedDate.value] = data.slots || [];
     }
   } catch (error) {
+    alertStore.setError('Errore durante il caricamento degli slot disponibili');
     console.error('Failed to get Available slots:', error);
   }
 };
@@ -271,6 +276,7 @@ const closeModal = () => {
 
 // recupera le informazioni del paziente di default
 const getDefaultPatientData = async () => {
+  alertStore.clearAlerts();
   try {
     const response = await api.get('/account/patient');
     if (response && response.data) {
@@ -280,6 +286,7 @@ const getDefaultPatientData = async () => {
     }
   } catch (error) {
     console.error(': Unable to get default patient data ', error);
+    alertStore.setError('Errore durante il caricamento dei dati del paziente');
   }
 };
 
@@ -287,12 +294,13 @@ const getDefaultPatientData = async () => {
 const saveAppointment = async (confirmedAppointment) => {
   try {
     await api.post('/appointment', confirmedAppointment);
-    alert('Prenotazione completata con successo!');
+    alertStore.setSuccess('Prenotazione completata con successo!');
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     closeModal();
     getAvailableSlots();
   } catch (error) {
     console.error('Errore nella prenotazione:', error);
-    alert('Errore nella prenotazione. Riprova più tardi.');
+    alertStore.setError('Si è verificato un errore durante la prenotazione');
     closeModal();
   }
 };
