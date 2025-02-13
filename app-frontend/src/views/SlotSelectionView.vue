@@ -9,7 +9,7 @@
     <!-- Filtri -->
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 mt-6">
       <div class="w-full sm:w-1/2">
-        <label for="operator" class="block text-md font-medium text-gray-700 mb-1">Operatore</label>
+        <label for="operator" class="block text-md font-medium text-standard mb-1">Operatore</label>
         <select id="operator" v-model="filters.operatorId" class="select" @change="applyFilters">
           <option value="">-- Tutti --</option>
           <option v-for="operator in operators" :key="operator.operator_id" :value="operator.operator_id">
@@ -19,7 +19,7 @@
       </div>
 
       <div class="w-full sm:w-1/2">
-        <label for="location" class="block text-md font-medium text-gray-700 mb-1">Laboratorio</label>
+        <label for="location" class="block text-md font-medium text-standard mb-1">Laboratorio</label>
         <select id="location" v-model="filters.locationId" class="select" @change="applyFilters">
           <option value="">-- Tutti --</option>
           <option v-for="location in locations" :key="location.location_id" :value="location.location_id">
@@ -47,7 +47,7 @@
     <div class="mb-6 mt-6">
       <div class="sub-title-page mb-4">Giorni disponibili</div>
       <div class="flex flex-wrap gap-2">
-        <div v-if="currentDates.length === 0" class="text-center text-lg text-gray-500">
+        <div v-if="currentDates.length === 0" class="text-center text-lg text-standard">
           Nessuna giorno prenotabile in questo mese.
         </div>
 
@@ -85,11 +85,11 @@
               <div>Ora inizio: {{ slot.appointment_time_start }}</div>
               <div>Ora fine: {{ slot.appointment_time_end }}</div>
             </div>
-            <p class="mt-1 text-sm text-gray-500">{{ slot.operator_name }}</p>
+            <p class="mt-1 text-sm text-standard">{{ slot.operator_name }}</p>
           </div>
-          <div class="text-md text-gray-700">
+          <div class="text-md font-semibold text-gray-900">
             {{ slot.location_name }}
-            <p class="text-sm text-gray-500">{{ slot.location_address }}</p>
+            <p class="text-sm text-standard">{{ slot.location_address }}</p>
           </div>
         </li>
       </ul>

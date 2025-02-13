@@ -8,7 +8,15 @@
       <form class="space-y-6" @submit.prevent="UserLogin">
         <div class="space-y-4">
           <div>
-            <input id="email" type="text" class="input" v-model="email" required placeholder="Inserisci la tua email" />
+            <input
+              id="email"
+              type="text"
+              class="input"
+              v-model="email"
+              required="true"
+              placeholder="Inserisci username o email"
+              @input="clearValidation"
+            />
           </div>
           <div>
             <input
@@ -16,9 +24,10 @@
               type="password"
               class="input"
               v-model="password"
-              required
+              required="true"
               placeholder="Inserisci la tua password"
               oninvalid="this.setCustomValidity('La password deve contenere almeno 8 caratteri, una lettera maiuscola, una minuscola, un numero e un carattere speciale')"
+              oninput="this.setCustomValidity('')"
             />
           </div>
         </div>
@@ -34,9 +43,8 @@
         </div>
         <div class="grid grid-cols-2 items-center">
           <div class="text-standard">Password dimenticata ?</div>
-          <router-link to="/reset-password" class="font-semibold text-primary hover:underline">
-            Recupera Password
-          </router-link>
+          <!--  Reset Password non implementato-->
+          <router-link to="" class="font-semibold text-primary hover:underline"> Recupera Password </router-link>
         </div>
       </div>
     </div>

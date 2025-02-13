@@ -93,7 +93,7 @@
     <div v-if="showCancelModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
         <h3 class="text-lg font-semibold mb-4">Conferma Cancellazione</h3>
-        <p class="text-gray-700 text-sm mb-4">
+        <p class="text-standard text-sm mb-4">
           Vuoi davvero annullare la prenotazione del
           <strong>{{ formatDate(appointmentToCancel?.appointment_date) }}</strong>
           dalle
@@ -114,7 +114,7 @@
     <div v-if="showEditModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
         <h3 class="text-lg font-semibold mb-4">Modifica Appuntamento</h3>
-        <p class="text-gray-700 text-sm mb-4">
+        <p class="text-sm mb-4">
           Vuoi modificare la prenotazione del
           <strong>{{ formatDate(appointmentToEdit?.appointment_date) }}</strong>
           dalle

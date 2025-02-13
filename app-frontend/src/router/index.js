@@ -32,24 +32,26 @@ const router = createRouter({
   routes,
 });
 
-// guardia per il router se l'utente prova ad accedere ad una rotta protetta
+// guardia per il router che verifica se l'utente è autenticato
 
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
-  
-  if (authStore.user === null) {
-    await authStore.checkAuth(); // controlla se l'utente è ancora autenticato
-  }
 
+  // se non c'è un utente in memoria, prova a fare una chiamata al backend per verificarlo
+  if (!authStore.user) {
+    await authStore.checkAuth();
+  }
+  
+  // se la rotta richiede l'autenticazione e l'utente non è autenticato, reindirizza al login
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    console.log('Utente non autenticato, reindirizzamento al login');
     return next({ name: 'login' });
   }
-
+  // se la rotta è login e l'utente è autenticato, reindirizza alla home
   if (to.name === 'login' && authStore.isAuthenticated) {
-    return next({ name: 'home' }); // evita che gli utenti autenticati accedano alla login
+    return next({ name: 'home' });
   }
-
+  // se la rotta è register e l'utente è autenticato, reindirizza alla home
+  // se il token fosse scaduto interviene l'interceptor di axios
   next();
 });
 

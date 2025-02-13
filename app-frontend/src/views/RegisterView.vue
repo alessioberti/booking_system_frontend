@@ -1,5 +1,6 @@
 <template>
   <div class="box-container">
+    <!-- form per la registrazione di un nuovo account -->
     <form @submit.prevent="RegisterNewAccount" class="space-y-6">
       <div>
         <h2 class="title-page">Registra un nuovo account</h2>
@@ -16,9 +17,10 @@
               id="lastName"
               type="text"
               v-model="lastName"
-              required
+              required="true"
               placeholder="Inserisci cognome"
               class="input"
+              @input="clearValidation"
             />
           </div>
         </div>
@@ -30,13 +32,14 @@
               id="password"
               type="password"
               v-model="password"
-              required
+              required="true"
               minlength="8"
               maxlength="32"
               pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,32}$"
               placeholder="Inserisci Password"
               class="input"
-              oninvalid="this.setCustomValidity('La password deve contenere almeno 8 caratteri, una lettera maiuscola, una minuscola, un numero e un carattere speciale')"
+              oninvalid="this.setCustomValidity('La password deve contenere da 8 a 32 caratteri, una lettera maiuscola, una minuscola, un numero e un carattere speciale')"
+              oninput="this.setCustomValidity('')"
             />
           </div>
           <div class="flex-1">
@@ -45,13 +48,13 @@
               id="confirmPassword"
               type="password"
               v-model="confirmPassword"
-              required
+              required="true"
               minlength="8"
               maxlength="32"
               placeholder="Conferma password"
               class="input"
             />
-            <p v-if="passwordMismatch" class="text-red-600 text-sm">Le password non corrispondono.</p>
+            <p v-if="passwordMismatch" class="text-error text-sm">Le password non corrispondono.</p>
           </div>
         </div>
 
@@ -62,10 +65,11 @@
               id="email"
               type="email"
               v-model="email"
-              required
+              required="true"
               pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
               placeholder="Inserisci email"
               class="input"
+              @input="clearValidation"
             />
           </div>
 
@@ -75,10 +79,11 @@
               id="telNumber"
               type="text"
               v-model="telNumber"
-              required
+              required="true"
               pattern="^\+?\d{10,13}$"
               placeholder="Inserisci telefono"
               class="input"
+              @input="clearValidation"
             />
           </div>
         </div>
@@ -89,9 +94,11 @@
               id="fiscalCode"
               type="text"
               v-model="fiscalCode"
-              required
+              pattern="^[A-Z0-9]{1,32}$"
+              required="true"
               placeholder="Inserisci codice fiscale"
               class="input"
+              @input="clearValidation"
             />
           </div>
           <div class="flex-1">
@@ -100,9 +107,11 @@
               id="birthDate"
               type="date"
               v-model="birthDate"
-              required
+              required="true"
               placeholder="Inserisci cognome"
               class="input text-standard"
+              pattern="\d{4}-\d{2}-\d{2}"
+              @input="clearValidation"
             />
           </div>
         </div>
@@ -143,20 +152,6 @@ const RegisterNewAccount = async () => {
     return;
   }
 
-  // verifica che tutti i campi siano stati inseriti
-  if (
-    !email.value ||
-    !password.value ||
-    !telNumber.value ||
-    !firstName.value ||
-    !lastName.value ||
-    !fiscalCode.value ||
-    !birthDate.value
-  ) {
-    alertStore.setError('Attenzone è necessaio insetire tutti i campi');
-    return;
-  }
-
   try {
     const response = await api.post('/register', {
       email: email.value,
@@ -183,9 +178,6 @@ const RegisterNewAccount = async () => {
       alertStore.setError('Errore durante la registrazione');
     }
   }
-};
-const goToHome = () => {
-  router.push({ name: 'home' });
 };
 </script>
 

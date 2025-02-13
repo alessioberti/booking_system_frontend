@@ -39,11 +39,12 @@ export const useAuthStore = defineStore('auth', {
     // verifica se l'utente è collegato
     async checkAuth() {
       try {
+        console.log('checkAuth');
         const response = await api.get('/account');
         this.user = response.data;
         localStorage.setItem('user', JSON.stringify(this.user)); 
       } catch (err) {
-        console.error('Errore durante il checkAuth:', err);
+        console.error('checkAuth error:', err);
         await this.logout();
       }
     },

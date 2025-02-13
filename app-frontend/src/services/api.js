@@ -11,4 +11,17 @@ const api = axios.create({
   withCredentials: true,
 });
 
+
+// interceptor per intercettare le richieste con token scaduto
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      const authStore = useAuthStore();
+      authStore.logout();
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;
