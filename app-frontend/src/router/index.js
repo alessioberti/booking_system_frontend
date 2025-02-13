@@ -38,10 +38,9 @@ router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
   // se non c'è un utente in memoria, prova a fare una chiamata al backend per verificarlo
-  if (!authStore.user) {
-    await authStore.checkAuth();
+  if (!authStore.isAuthenticated) {
+      await authStore.checkAuth();
   }
-  
   // se la rotta richiede l'autenticazione e l'utente non è autenticato, reindirizza al login
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return next({ name: 'login' });
@@ -50,8 +49,7 @@ router.beforeEach(async (to, from, next) => {
   if (to.name === 'login' && authStore.isAuthenticated) {
     return next({ name: 'home' });
   }
-  // se la rotta è register e l'utente è autenticato, reindirizza alla home
-  // se il token fosse scaduto interviene l'interceptor di axios
+  // altrimenti, prosegui con la navigazione (interceptor per token scaduto)
   next();
 });
 

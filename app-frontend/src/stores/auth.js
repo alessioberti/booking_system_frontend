@@ -1,31 +1,29 @@
-import { defineStore } from 'pinia';
+
 import api from '../services/api';
+import { defineStore } from 'pinia';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: JSON.parse(localStorage.getItem('user')) || null, 
+    user: null,
     error: null,
   }),
 
   getters: {
     isAuthenticated: (state) => !!state.user,
   },
-
+  
   actions: {
-    async login(email, password) {
+    async login(username, password) {
       this.error = null;
       try {
-        const response = await api.post('/login', { email, password });
+        const response = await api.post('/login', { username, password });
         this.user = response.data;
-        localStorage.setItem('user', JSON.stringify(this.user));
       } catch (err) {
         this.error = err.response?.data?.error || 'login error';
-        // propaga l'errore per gestirlo nel componente
         throw err;
       }
     },
 
-    // chiede al bakckend di sovrascrivere il token
     async logout() {
       try {
         await api.post('/logout');
@@ -33,20 +31,28 @@ export const useAuthStore = defineStore('auth', {
         console.error('logout error:', err);
       }
       this.user = null;
-      localStorage.removeItem('user'); 
     },
 
-    // verifica se l'utente è collegato
     async checkAuth() {
       try {
-        console.log('checkAuth');
         const response = await api.get('/account');
         this.user = response.data;
-        localStorage.setItem('user', JSON.stringify(this.user)); 
       } catch (err) {
         console.error('checkAuth error:', err);
         await this.logout();
       }
     },
   },
+
+  // Configurazione della persistenza in sessione
+  persist: {
+    enabled: true,
+    strategies: [
+      {
+        key: 'auth',
+        storage: window.sessionStorage,
+        paths: ['user']
+      }
+    ]
+  }
 });

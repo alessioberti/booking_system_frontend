@@ -35,7 +35,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../services/api';
 import { useViewDataStore } from '../stores/viewData';
@@ -96,8 +96,11 @@ const goToHome = () => {
   router.push({ name: 'home' });
 };
 
-// Carica gli esami al montaggio della view
-getServices();
+// Carica gli esami al montaggio della view e cacella dallo store un eventuale replace di un appuntamento
+onMounted(() => {
+  getServices();
+  viewDataStore.clearData('appointmentToReplace');
+});
 </script>
 
 <style></style>

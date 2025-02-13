@@ -9,12 +9,12 @@
         <div class="space-y-4">
           <div>
             <input
-              id="email"
+              id="username"
               type="text"
               class="input"
-              v-model="email"
+              v-model="username"
               required="true"
-              placeholder="Inserisci username o email"
+              placeholder="Inserisci la tua mail o username"
               @input="clearValidation"
             />
           </div>
@@ -59,7 +59,7 @@ import { useAuthStore } from '../stores/auth';
 import { useAlertStore } from '../stores/alert';
 const alertStore = useAlertStore();
 
-const email = ref('');
+const username = ref('');
 const password = ref('');
 
 const authStore = useAuthStore();
@@ -68,12 +68,12 @@ const router = useRouter();
 const UserLogin = async () => {
   alertStore.clearAlerts();
   try {
-    await authStore.login(email.value, password.value);
+    await authStore.login(username.value, password.value);
     // Dopo il login reindirizza alla home
     router.push({ name: 'home' });
   } catch (err) {
     if (err?.response && err?.response?.status === 401) {
-      alertStore.setError('Email o password errati');
+      alertStore.setError('username o password errati');
       return;
     }
     if (err?.response && err?.response?.status === 403) {

@@ -126,7 +126,7 @@
         </p>
         <div class="mt-4 flex center gap-4">
           <button @click="openAppointmentDetails" class="button-success">Modifica Note/Paziente</button>
-          <button class="button-success">Modifica Data/Orario</button>
+          <button @click="selectNewSlot" class="button-success">Modifica Sede Data/Orario</button>
         </div>
         <div class="flex justify-end gap-4 mt-4">
           <button @click="closeEditModal" class="button-back">Indietro</button>
@@ -151,10 +151,13 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../services/api';
 import appointmentDetails from '../components/AppointmentDetails.vue';
+
 // gestione degli alert in tramite pinia e composizione
 import { useAlertStore } from '../stores/alert';
 const alertStore = useAlertStore();
+import { useViewDataStore } from '../stores/viewData';
 
+const viewDataStore = useViewDataStore();
 // Dichiarazione delle variabili reattive
 const router = useRouter();
 
@@ -287,8 +290,20 @@ const closeappointmentModal = () => {
   appointmentToEdit.value = null;
 };
 
-const editappointmentDatetime = () => {
-  // da implementare
+//{"data":{"selectedService":{"description":null,"name":"Visita Otorinolaringoiatrica","service_id":"fb870a5f-dbaf-4ec6-b47b-4a7dc9193d43"}}}
+//{"data":{"selectedService":{"description":null,"name":"Visita Oculistica","service_id":"b64d34ca-f1a8-4a0a-8ede-63b4cbc6cd2a"}}}
+//{"data":{"selectedService":{"service_name":"Visita Otorinolaringoiatrica"}}}
+
+const selectNewSlot = () => {
+  // salva l'appuntamento da modificare nello store sotto una chiave specifica
+  viewDataStore.setData('appointmentToReplace', appointmentToEdit.value);
+  // imposta lo stesso esame dell'appuntamento nello store
+  viewDataStore.setData('selectedService', {
+    service_id: appointmentToEdit.value.service_id,
+    name: appointmentToEdit.value.service_name,
+  });
+  // Reindirizza l'utente alla pagina di selezione degli slot
+  router.push({ name: 'slot-selection' });
 };
 
 const updateAppointment = async (confirmedAppointment) => {

@@ -64,7 +64,7 @@
               class="input"
               required="true"
               placeholder="Inserisci l'email"
-              pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$"
+              pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
               oninput="this.setCustomValidity('')"
             />
           </div>
@@ -79,7 +79,7 @@
               class="input"
               required="true"
               placeholder="Inserisci il numero di telefono"
-              pattern="^\+?\d{10,13}$"
+              pattern="^\+?\d{7,13}$"
               @input="clearValidation"
             />
           </div>
@@ -95,7 +95,7 @@
               class="input"
               required="true"
               placeholder="Inserisci codice fiscale"
-              pattern="^[A-Z0-9]{1,32}"
+              pattern="^[a-zA-Z0-9]{3,32}$"
               @input="clearValidation"
             />
           </div>
@@ -134,7 +134,7 @@
         </div>
 
         <div class="flex justify-end space-x-2">
-          <button @click="returnBack()" class="button-back">Annulla</button>
+          <button @click="returnBack()" class="button-back">Indietro</button>
           <button type="submit" class="button">Conferma</button>
         </div>
       </form>
@@ -188,7 +188,7 @@ const fiscalcode = ref('');
 const birthdate = ref('');
 const appointmentInfo = ref(props.appointmentInfo);
 const useDefault = ref(true);
-
+const clearValidation = () => {};
 // inizialiizza il form con i dati del paziente
 const initForm = () => {
   alertStore.clearAlerts();

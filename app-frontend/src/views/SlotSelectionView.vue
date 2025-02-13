@@ -1,7 +1,7 @@
 <template>
   <div class="box-container">
     <div class="flex items-center mb-4">
-      <button class="button-back mr-6" @click="goToServiceList">Indietro</button>
+      <button class="button-back mr-6" @click="goBack">Indietro</button>
       <h2 class="title-page">Disponibilità per {{ serviceName }}</h2>
     </div>
     <hr />
@@ -95,7 +95,7 @@
       </ul>
     </div>
 
-    <!-- Modale per confermare la prenotazione -->
+    <!-- modale per confermare la prenotazione -->
     <AppointmentDetails
       v-if="isModalOpen"
       @close="closeModal"
@@ -103,6 +103,14 @@
       :bookingData="selectedSlot"
       :patientData="defaultPatientData"
       :serviceName="serviceName"
+    />
+    <!-- Modale per cambiare giorno e ora della prenotazione -->
+    <AppointmentReplace
+      v-if="isModalReplaceOpen"
+      @close="closeModal"
+      @confirm="saveAppointment"
+      :newAppointment="selectedSlot"
+      :oldAppointment="appointmentToReplace"
     />
   </div>
 </template>
@@ -113,6 +121,7 @@ import { useRouter } from 'vue-router';
 import api from '../services/api';
 import { useViewDataStore } from '../stores/viewData';
 import AppointmentDetails from '../components/AppointmentDetails.vue';
+import AppointmentReplace from '../components/AppointmentReplace.vue';
 // gestione degli alert in tramite pinia e composizione
 import { useAlertStore } from '../stores/alert';
 const alertStore = useAlertStore();
@@ -120,11 +129,7 @@ const alertStore = useAlertStore();
 const router = useRouter();
 const viewDataStore = useViewDataStore();
 
-if (!viewDataStore.getData('selectedService')) {
-  router.push({ name: 'service-selection' });
-}
-
-const selectedService = computed(() => viewDataStore.getData('selectedService'));
+const selectedService = computed(() => viewDataStore.data.selectedService);
 const serviceName = computed(() => (selectedService.value ? selectedService.value.name : ''));
 const serviceTypeId = computed(() => (selectedService.value ? selectedService.value.service_id : null));
 const fromDatetime = ref('');
@@ -141,8 +146,12 @@ const operators = ref([]);
 const locations = ref([]);
 const nextCursor = ref(null);
 const prevCursor = ref(null);
+
 const isModalOpen = ref(false);
 const selectedSlot = ref(null);
+
+const isModalReplaceOpen = ref(false);
+const appointmentToReplace = ref(null);
 
 // calcola il nome del mese e l'anno corrente
 const currentMonthName = computed(() => {
@@ -255,23 +264,29 @@ const prevMonth = () => {
   }
 };
 
-// torna alla selezione dell'esame
-const goToServiceList = () => {
-  router.push({ name: 'service-selection' });
+// torna alla selezione dell'esame o alla gestione dell'appuntamento
+const goBack = () => {
+  router.back();
 };
 
 // apri un modale per inserire i dati paziente e confermare la prenotazione
 const openAppointmentDetails = async (slot) => {
   selectedSlot.value = slot;
-  console.log('selectedSlot', selectedSlot.value);
-  await getDefaultPatientData();
-  isModalOpen.value = true;
+
+  appointmentToReplace.value = viewDataStore.data.appointmentToReplace;
+  if (appointmentToReplace.value) {
+    isModalReplaceOpen.value = true;
+  } else {
+    await getDefaultPatientData();
+    isModalOpen.value = true;
+  }
 };
 
 // chiudi il modale
 const closeModal = () => {
   isModalOpen.value = false;
   selectedSlot.value = null;
+  isModalReplaceOpen.value = false;
 };
 
 // recupera le informazioni del paziente di default
@@ -294,18 +309,20 @@ const getDefaultPatientData = async () => {
 const saveAppointment = async (confirmedAppointment) => {
   try {
     await api.post('/appointment', confirmedAppointment);
-    alertStore.setSuccess('Prenotazione completata con successo!');
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    alertStore.setSuccess('Prenotazione completata. verrai renidirizzato alla gestione appuntamenti');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     closeModal();
-    getAvailableSlots();
+    router.push({ name: 'appointments' });
   } catch (error) {
     console.error('Errore nella prenotazione:', error);
     alertStore.setError('Si è verificato un errore durante la prenotazione');
-    closeModal();
   }
 };
 
 onMounted(() => {
+  if (!viewDataStore.data.selectedService) {
+    router.push({ name: 'service-selection' });
+  }
   initializeDateRange();
   getAvailableSlots();
 });
