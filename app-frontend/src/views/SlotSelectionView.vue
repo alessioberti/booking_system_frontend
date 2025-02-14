@@ -67,7 +67,7 @@
       </div>
     </div>
     <hr />
-    <!-- Lista degli slot -->
+    <!-- Lista degli slot con selezione anche da tastiera-->
     <div v-if="selectedDate && groupedSlots[selectedDate]" class="mt-10">
       <h3 class="text-xl mb-4">
         Disponibilità per il giorno <span class="font-bold">{{ formatSelectedDate(selectedDate) }}</span>
@@ -77,6 +77,8 @@
         <li
           v-for="slot in groupedSlots[selectedDate]"
           :key="slot.appointment_time_start"
+          tabindex="0"
+          @keydown.enter="openAppointmentDetails(slot)"
           @click="openAppointmentDetails(slot)"
           class="slot-item cursor-pointer hover:bg-gray-100"
         >

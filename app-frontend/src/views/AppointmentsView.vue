@@ -2,18 +2,46 @@
   <div class="box-container">
     <h2 class="title-page">Le mie Prenotazioni</h2>
 
-    <!-- mostra messaggio in caso non siano prenotazioni-->
-    <div v-if="appointments.length === 0">
-      <div class="flex justify-left mt-6">
-        <p class="text-standard">Non hai ancora effettuato prenotazioni.</p>
-      </div>
-      <div class="flex justify-left mt-6">
-        <button @click="goBack" class="button-back">Indietro</button>
-      </div>
-    </div>
-
     <!-- altrimenti stampa la lista delle prenotazioni -->
-    <div v-else>
+
+    <div>
+      <h3 class="font-semibold text-grey-800 mt-4">Filtra Appuntamenti:</h3>
+      <!-- chekbox per filtrare i risultati -->
+      <ul
+        class="items-center w-full text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg sm:flex mt-4"
+      >
+        <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
+          <div class="flex items-center ps-3">
+            <input
+              id="past_appointments"
+              type="checkbox"
+              v-model="includePastAppointments"
+              @change="getAppointments"
+              value=""
+              class="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded-sm focus:ring-primary"
+            />
+            <label for="past_appointments" class="w-full py-3 ms-2 text-sm font-medium text-gray-900"
+              >Visualizza appuntamenti passati</label
+            >
+          </div>
+        </li>
+        <li class="w-full border-b border-gray-200 sm:border-b-0 sm:border-r">
+          <div class="flex items-center ps-3">
+            <input
+              id="rejected_appointments"
+              v-model="includeRejectedAppointments"
+              @change="getAppointments"
+              type="checkbox"
+              value=""
+              class="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded-sm focus:ring-primary"
+            />
+            <label for="rejected_appointments" class="w-full py-3 ms-2 text-sm font-medium text-gray-900"
+              >Visualizza Appuntamenti Cancellati</label
+            >
+          </div>
+        </li>
+      </ul>
+
       <ul class="space-y-4">
         <li
           v-for="appointment in appointments"
@@ -72,6 +100,12 @@
           </div>
         </li>
       </ul>
+      <!-- mostra messaggio in caso non siano prenotazioni-->
+      <div v-if="appointments.length === 0">
+        <div class="flex justify-left mt-6">
+          <p class="text-standard">Nessuna prenotazione</p>
+        </div>
+      </div>
 
       <!-- Paginazione -->
       <div class="flex justify-between items-center mt-6">
@@ -162,6 +196,8 @@ const viewDataStore = useViewDataStore();
 const router = useRouter();
 
 // Dichiarazione dei singoli ref
+const includeRejectedAppointments = ref(false);
+const includePastAppointments = ref(false);
 const appointments = ref([]);
 const currentPage = ref(1);
 const totalPages = ref(1);
@@ -171,6 +207,7 @@ const showEditModal = ref(false);
 const showAppointmentDetails = ref(false);
 const patientToEdit = ref(null);
 const appointmentToEdit = ref(null);
+let isOriginPatientDeafult = false;
 
 // Funzioni di formattazione per date e orari
 function formatDate(dateStr) {
@@ -195,8 +232,12 @@ const getAppointments = async () => {
   try {
     alertStore.clearAlerts();
     const resp = await api.get('/appointments', {
-      withCredentials: true,
-      params: { page: currentPage.value, per_page: 10 },
+      params: {
+        page: currentPage.value,
+        per_page: 10,
+        rejected_appointments: includeRejectedAppointments.value,
+        past_appointments: includePastAppointments.value,
+      },
     });
     currentPage.value = resp.data.current_page;
     totalPages.value = resp.data.pages;
@@ -276,6 +317,8 @@ const getAppointmentPatientData = async () => {
     const response = await api.get(`/appointments/${appointmentToEdit.value.appointment_id}/patient`);
     if (response && response.data) {
       patientToEdit.value = response.data;
+      // salva i dati del paziente originale per confronto prima di fare la modifica
+      isOriginPatientDeafult = response.data.is_default;
     } else {
       patientToEdit.value = {};
     }
@@ -290,10 +333,6 @@ const closeappointmentModal = () => {
   appointmentToEdit.value = null;
 };
 
-//{"data":{"selectedService":{"description":null,"name":"Visita Otorinolaringoiatrica","service_id":"fb870a5f-dbaf-4ec6-b47b-4a7dc9193d43"}}}
-//{"data":{"selectedService":{"description":null,"name":"Visita Oculistica","service_id":"b64d34ca-f1a8-4a0a-8ede-63b4cbc6cd2a"}}}
-//{"data":{"selectedService":{"service_name":"Visita Otorinolaringoiatrica"}}}
-
 const selectNewSlot = () => {
   // salva l'appuntamento da modificare nello store sotto una chiave specifica
   viewDataStore.setData('appointmentToReplace', appointmentToEdit.value);
@@ -306,24 +345,24 @@ const selectNewSlot = () => {
   router.push({ name: 'slot-selection' });
 };
 
-const updateAppointment = async (confirmedAppointment) => {
+const updateAppointment = async () => {
   try {
     alertStore.clearAlerts();
-    // se il era di default ma è richiesto un nuovo paziente crea un nuovo paziente e lo associa alla prenotazione
-    if (confirmedAppointment.patient.is_default === false && appointmentToEdit.value.is_default === true) {
-      await api.post(`/appointments/${appointmentToEdit.value.appointment_id}/new_patient`, {
-        patient: confirmedAppointment.patient,
+    // se il paziente era di default ma è richiesto un nuovo paziente crea un nuovo paziente e lo associa alla prenotazione
+    if (patientToEdit.value.is_default === false && isOriginPatientDeafult === true) {
+      await api.put(`/appointments/${appointmentToEdit.value.appointment_id}/patient/replace`, {
+        patient: patientToEdit.value,
       });
-      // se il paziente non era di default e sono stati cambiati i dati
-    } else if (confirmedAppointment.patient.is_default === false) {
-      await api.put(`/appointments/${appointmentToEdit.value.appointment_id}/patient`, confirmedAppointment);
-    }
-    // se sono stati cambiate le note della prenotazione
-    if (confirmedAppointment.info !== appointmentToEdit.value.info) {
-      await api.put(`/appointments/${appointmentToEdit.value.appointment_id}/info`, {
-        info: confirmedAppointment.appointment.info,
+      // se il paziente non era di default aggiorna i dati del paziente
+    } else if (patientToEdit.value.is_default === false && isOriginPatientDeafult === false) {
+      await api.put(`/appointments/${appointmentToEdit.value.appointment_id}/patient/update`, {
+        patient: patientToEdit.value,
       });
     }
+    // aggiorna le note della prenotazione
+    await api.put(`/appointments/${appointmentToEdit.value.appointment_id}/info`, {
+      info: appointmentToEdit.value.info,
+    });
     alertStore.setSuccess('Prenotazione modificata con successo');
     await new Promise((resolve) => setTimeout(resolve, 1500));
 

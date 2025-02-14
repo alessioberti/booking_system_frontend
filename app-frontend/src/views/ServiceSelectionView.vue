@@ -4,20 +4,32 @@
       <button class="button-back mr-6" @click="goToHome">Indietro</button>
       <h2 class="title-page">Seleziona un esame</h2>
     </div>
+    <!-- barra di ricerca -->
+    <div class="mb-4">
+      <input
+        type="text"
+        v-model="searchService"
+        placeholder="Cerca esame..."
+        class="w-full p-2 border border-gray-300 rounded-md"
+      />
+    </div>
 
-    <!-- Stampa la lista degli esami -->
+    <!-- Stampa la lista degli esami  per -->
     <ul role="list" class="divide-y divide-gray-200">
       <li
-        v-for="service in serviceTypes"
+        v-for="(service, index) in serviceTypes"
         :key="service.service_id"
+        tabindex="0"
         @click="selectService(service)"
+        @keydown.enter="selectService(service)"
         class="slot-item cursor-pointer hover:bg-gray-100"
       >
         <div>
           <p class="text-md font-semibold text-gray-900">{{ service.name }}</p>
           <p class="mt-1 text-sm text-gray-500">{{ service.description }}</p>
         </div>
-        <div class="text-md text-gray-700">Clicca per selezionare</div>
+        <div v-if="service.has_enabled_availability" class="text-md text-primary hover:underline">Seleziona</div>
+        <div v-else class="text-md text-gray-700">Non disponibile</div>
       </li>
     </ul>
 
@@ -35,13 +47,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../services/api';
 import { useViewDataStore } from '../stores/viewData';
+
 // gestione degli alert in tramite pinia e composizione
 import { useAlertStore } from '../stores/alert';
 const alertStore = useAlertStore();
+
+// consente di gestire un ritardo nell'esecuzione della ricerca degli esami
+import debounce from 'lodash.debounce';
 
 // Definizione delle variabili reattive
 const router = useRouter();
@@ -50,6 +66,7 @@ const serviceTypes = ref([]);
 const currentPage = ref(1);
 const totalPages = ref(1);
 const perPage = ref(10);
+const searchService = ref('');
 
 // Recuperare gli esami dal backend
 const getServices = async () => {
@@ -57,6 +74,7 @@ const getServices = async () => {
   try {
     const response = await api.get('/services', {
       params: {
+        search: searchService.value,
         page: currentPage.value,
         per_page: perPage.value,
       },
@@ -69,6 +87,11 @@ const getServices = async () => {
     alertStore.setError('Errore durante il caricamento degli esami');
   }
 };
+// Ricerca degli esami con un ritardo di 300ms
+const debouncedGetServices = debounce(getServices, 300);
+watch(searchService, () => {
+  debouncedGetServices();
+});
 
 // Funzioni per la paginazione
 const prevPage = () => {

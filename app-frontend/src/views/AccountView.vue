@@ -5,109 +5,114 @@
     <div v-if="!showpatientdata">
       <div class="grid grid-cols-1 gap-6">
         <!-- form per aggiornare username -->
-        <form
-          @submit.prevent="
-            () => confirmAction(updateUsername, 'Attenzione: l\'username di accesso verrà modificato. Continuare?')
-          "
-          class="space-y-6"
-        >
-          <div>
-            <label class="label" for="username">Username</label>
-            <div class="flex items-center justify-between">
-              <input
-                id="username"
-                type="text"
-                :disabled="!editusername"
-                v-model="username"
-                required
-                placeholder="Inserisci username"
-                class="input flex-1"
-                pattern="^[A-Za-z0-9]{3,32}$"
-                oninvalid="this.setCustomValidity('Inserisci solo lettere, numeri (da 3 a 32 caratteri)')"
-                oninput="this.setCustomValidity('')"
-              />
-              <button v-if="!editusername" @click.prevent="enableusernameEdit" class="button ml-4">Modifica</button>
-              <button v-else type="submit" class="button ml-4">Salva</button>
+        <div v-if="!editPassword">
+          <form @submit.prevent="updateUsername" class="space-y-6">
+            <div>
+              <label class="label" for="username">Username</label>
+              <div class="flex items-center justify-between">
+                <input
+                  id="username"
+                  type="text"
+                  :disabled="!editusername"
+                  v-model="username"
+                  required
+                  placeholder="Inserisci username"
+                  class="input flex-1"
+                  pattern="^[A-Za-z0-9]{3,32}$"
+                  oninvalid="this.setCustomValidity('Inserisci solo lettere, numeri (da 3 a 32 caratteri)')"
+                  oninput="this.setCustomValidity('')"
+                />
+                <div v-if="!editusername">
+                  <button @click.prevent="enableusernameEdit" class="button ml-4">Modifica</button>
+                </div>
+              </div>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
 
-        <!-- form per aggiornare la password -->
-        <form
-          @submit.prevent="
-            () => confirmAction(updatePassword, 'Attenzione: la password di accesso verrà modificata. Continuare?')
-          "
-          class="space-y-6"
-        >
-          <div>
-            <label class="label" for="password">Password Attuale</label>
-            <div class="flex items-center justify-between">
-              <input
-                id="password"
-                type="password"
-                :disabled="!editPassword"
-                v-model="password"
-                minlength="8"
-                maxlength="32"
-                placeholder="Password attuale"
-                class="input flex-1"
-              />
-              <button v-if="!editPassword" @click.prevent="enablePasswordEdit" class="button ml-4">Modifica</button>
-              <button v-else type="submit" class="button ml-4">Salva</button>
+        <!-- form per aggiornare la password  -->
+        <div v-if="!editusername">
+          <form @submit.prevent="updatePassword" class="space-y-6">
+            <div>
+              <label class="label" for="password">Password Attuale</label>
+              <div class="flex items-center justify-between">
+                <input
+                  id="password"
+                  type="password"
+                  :disabled="!editPassword"
+                  v-model="password"
+                  minlength="8"
+                  maxlength="32"
+                  placeholder="Password attuale"
+                  class="input flex-1"
+                />
+                <div v-if="!editPassword">
+                  <button @click.prevent="enablePasswordEdit" class="button ml-4">Modifica</button>
+                </div>
+              </div>
+              <div v-if="editPassword" class="mt-2">
+                <label class="label" for="newPassword">Nuova Password</label>
+                <input
+                  id="newPassword"
+                  type="password"
+                  v-model="newPassword"
+                  required
+                  minlength="8"
+                  maxlength="32"
+                  placeholder="Nuova password"
+                  class="input"
+                />
+              </div>
+              <div v-if="editPassword" class="mt-2">
+                <label class="label" for="confirmPassword">Conferma Nuova Password</label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  v-model="confirmNewPassword"
+                  required
+                  minlength="8"
+                  maxlength="32"
+                  placeholder="Conferma password"
+                  class="input"
+                />
+                <p v-if="passwordMismatch" class="text-error text-sm">Le password non corrispondono.</p>
+              </div>
             </div>
-            <div v-if="editPassword" class="mt-2">
-              <label class="label" for="newPassword">Nuova Password</label>
-              <input
-                id="newPassword"
-                type="password"
-                v-model="newPassword"
-                required
-                minlength="8"
-                maxlength="32"
-                placeholder="Nuova password"
-                class="input"
-              />
-            </div>
-            <div v-if="editPassword" class="mt-2">
-              <label class="label" for="confirmPassword">Conferma Nuova Password</label>
-              <input
-                id="confirmPassword"
-                type="password"
-                v-model="confirmNewPassword"
-                required
-                minlength="8"
-                maxlength="32"
-                placeholder="Conferma password"
-                class="input"
-              />
-              <p v-if="passwordMismatch" class="text-error text-sm">Le password non corrispondono.</p>
-            </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
 
-      <div class="flex justify-between mt-6 mb-2">
+      <!-- pulsandi per la modifica -->
+      <div v-if="isEditing" class="flex justify-between mt-6 mb-2">
+        <button @click="cancelEdits" class="button-back mb-4">Annulla</button>
+        <button @click="saveEdits" class="button-success mb-4">Salva</button>
+      </div>
+
+      <!-- punsanti per tornare indietro o modificare i dati del paziente -->
+      <div v-else class="flex justify-between mt-6 mb-2">
         <button @click="goToHome" class="button-back mb-4">Indietro</button>
         <button @click="goToPatientData" class="button-success mb-4">Modifica dati anagrafici</button>
       </div>
-      <hr />
-      <div class="mt-12">
-        <button
-          @click="
-            () =>
-              confirmAction(
-                deleteAccount,
-                'Attenzione la cancellazione dell\'account è irreversibile. Verranno eliminati tutti i dati dei pazienti collegati all\'account.'
-              )
-          "
-          class="button-delete mb-4"
-        >
-          Cancella i miei dati
-        </button>
+      <div v-if="!isEditing">
+        <hr />
+        <div class="mt-12">
+          <button
+            @click="
+              () =>
+                confirmAction(
+                  deleteAccount,
+                  'Attenzione la cancellazione dell\'account è irreversibile. Verranno eliminati tutti i dati dei pazienti collegati all\'account.'
+                )
+            "
+            class="button-delete mb-4"
+          >
+            Cancella i miei dati
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- form per aggiornare il paziente di default dell'account -->
+    <!-- form per aggiornare dati paziente -->
     <div v-else>
       <div class="grid grid-cols-1 gap-6">
         <form @submit.prevent="updatePatientData" class="space-y-6">
@@ -201,7 +206,7 @@
       </div>
     </div>
 
-    <!-- Modale per la richiesta di conferma -->
+    <!-- modale per confermare (rimane solo per l'eliminazione dell'account) -->
     <div v-if="updateModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
         <h3 class="text-lg font-semibold mb-4">Conferma azione</h3>
@@ -223,6 +228,7 @@ import { useAlertStore } from '../stores/alert';
 
 const alertStore = useAlertStore();
 const router = useRouter();
+
 const editusername = ref(false);
 const editPassword = ref(false);
 const username = ref('');
@@ -241,11 +247,15 @@ const fiscalcode = ref('');
 const birthdate = ref(null);
 const useDefault = ref(false);
 
+// verifica se si sta modificando l'username o la password
+const isEditing = computed(() => editusername.value || editPassword.value);
+
 // verifica in tempo reale se le password corrispondono
 const passwordMismatch = computed(() => {
   return confirmNewPassword.value.length > 0 && newPassword.value !== confirmNewPassword.value;
 });
 
+// conferma l'azione da eseguire (rimane per l'eliminazione dell'account)
 const confirmAction = (action, message) => {
   pendingAction.value = action;
   modalMessage.value = message;
@@ -265,16 +275,39 @@ const closeModal = () => {
   pendingAction.value = null;
 };
 
-// Funzioni di abilitazione per modifica
 const enableusernameEdit = () => {
   editusername.value = true;
+  editPassword.value = false;
 };
 
 const enablePasswordEdit = () => {
   editPassword.value = true;
+  editusername.value = false;
 };
 
-// aggiorna l'username dell'account
+const cancelUsernameEdit = () => {
+  editusername.value = false;
+  getAccountData();
+};
+
+const cancelPasswordEdit = () => {
+  editPassword.value = false;
+  password.value = '';
+  newPassword.value = '';
+  confirmNewPassword.value = '';
+};
+
+const cancelEdits = () => {
+  if (editusername.value) cancelUsernameEdit();
+  if (editPassword.value) cancelPasswordEdit();
+};
+
+const saveEdits = async () => {
+  if (editusername.value) await updateUsername();
+  if (editPassword.value) await updatePassword();
+};
+
+// aggiorna l'username
 const updateUsername = async () => {
   try {
     await api.put('/account/username', { username: username.value });
@@ -287,7 +320,8 @@ const updateUsername = async () => {
     getAccountData();
   }
 };
-// aggiorna la password dell'account
+
+// aggiorna la password
 const updatePassword = async () => {
   if (passwordMismatch.value) {
     alertStore.setError('Le password non corrispondono');
@@ -308,7 +342,8 @@ const updatePassword = async () => {
     alertStore.setError("Errore durante l'aggiornamento della password");
   }
 };
-// cancella l'accout e anonimizza tutti i dati dei pazienti collegati
+
+// anonimizza l'account e tutti i pazienti collegati
 const deleteAccount = async () => {
   try {
     await api.post('/account/anonimize');
@@ -320,6 +355,7 @@ const deleteAccount = async () => {
   }
 };
 
+// torna alla home
 const goToHome = () => {
   router.push({ name: 'home' });
 };
@@ -334,7 +370,7 @@ const goToAccountData = () => {
   getAccountData();
 };
 
-// recupera username
+// recupera i dati dell'account
 const getAccountData = async () => {
   try {
     const response = await api.get('/account');
@@ -346,6 +382,7 @@ const getAccountData = async () => {
     alertStore.setError("Errore durante il caricamento dei dati dell'account");
   }
 };
+
 // recupera i dati del paziente di default
 const getDefaultPatientData = async () => {
   alertStore.clearAlerts();
@@ -362,7 +399,8 @@ const getDefaultPatientData = async () => {
     alertStore.setError('Errore durante il caricamento dei dati del paziente');
   }
 };
-// aggiorna i dati del paziente di default
+
+// aggiorna  i dati del paziente di default
 const updatePatientData = async () => {
   alertStore.clearAlerts();
   try {
