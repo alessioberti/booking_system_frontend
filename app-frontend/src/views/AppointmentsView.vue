@@ -1,8 +1,10 @@
 <template>
   <div class="box-container">
-    <h2 class="title-page">Le mie Prenotazioni</h2>
-
-    <!-- altrimenti stampa la lista delle prenotazioni -->
+    <div class="flex items-center mb-4">
+      <button class="button-back mr-6" @click="goBack">Indietro</button>
+      <h2 class="title-page">Le mie Prenotazioni</h2>
+    </div>
+    <hr />
 
     <div>
       <h3 class="font-semibold text-grey-800 mt-4">Filtra Appuntamenti:</h3>
@@ -41,7 +43,7 @@
           </div>
         </li>
       </ul>
-
+      <!-- Lista delle prenotazioni -->
       <ul class="space-y-4">
         <li
           v-for="appointment in appointments"
@@ -116,10 +118,6 @@
         <button @click="nextPage" :class="{ 'button-disabled': currentPage === totalPages }" class="button">
           <div class="flex"><span class="hidden-mobile mr-2">Successivo</span> >></div>
         </button>
-      </div>
-
-      <div class="flex justify-left mt-6">
-        <button @click="goBack" class="button-back">Indietro</button>
       </div>
     </div>
 
@@ -364,7 +362,7 @@ const updateAppointment = async () => {
       info: appointmentToEdit.value.info,
     });
     alertStore.setSuccess('Prenotazione modificata con successo');
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     closeappointmentModal();
     getAppointments();

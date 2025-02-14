@@ -78,8 +78,8 @@
           v-for="slot in groupedSlots[selectedDate]"
           :key="slot.appointment_time_start"
           tabindex="0"
-          @keydown.enter="openAppointmentDetails(slot)"
-          @click="openAppointmentDetails(slot)"
+          @keydown.enter="openAppointmentModal(slot)"
+          @click="openAppointmentModal(slot)"
           class="slot-item cursor-pointer hover:bg-gray-100"
         >
           <div>
@@ -99,17 +99,17 @@
 
     <!-- modale per confermare la prenotazione -->
     <AppointmentDetails
-      v-if="isModalOpen"
-      @close="closeModal"
+      v-if="isModalConfirmOpen"
+      @close="closeModals"
       @confirm="saveAppointment"
       :bookingData="selectedSlot"
-      :patientData="defaultPatientData"
+      :patientData="patientData"
       :serviceName="serviceName"
     />
     <!-- Modale per cambiare giorno e ora della prenotazione -->
     <AppointmentReplace
       v-if="isModalReplaceOpen"
-      @close="closeModal"
+      @close="closeModals"
       @confirm="saveAppointment"
       :newAppointment="selectedSlot"
       :oldAppointment="appointmentToReplace"
@@ -122,8 +122,9 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../services/api';
 import { useViewDataStore } from '../stores/viewData';
-import AppointmentDetails from '../components/AppointmentDetails.vue';
 import AppointmentReplace from '../components/AppointmentReplace.vue';
+import AppointmentDetails from '../components/AppointmentDetails.vue';
+
 // gestione degli alert in tramite pinia e composizione
 import { useAlertStore } from '../stores/alert';
 const alertStore = useAlertStore();
@@ -143,13 +144,13 @@ const filters = ref({
   operatorId: '',
   locationId: '',
 });
-const defaultPatientData = ref({});
+const patientData = ref({});
 const operators = ref([]);
 const locations = ref([]);
 const nextCursor = ref(null);
 const prevCursor = ref(null);
 
-const isModalOpen = ref(false);
+const isModalConfirmOpen = ref(false);
 const selectedSlot = ref(null);
 
 const isModalReplaceOpen = ref(false);
@@ -272,23 +273,24 @@ const goBack = () => {
 };
 
 // apri un modale per inserire i dati paziente e confermare la prenotazione
-const openAppointmentDetails = async (slot) => {
+const openAppointmentModal = async (slot) => {
   selectedSlot.value = slot;
-
-  appointmentToReplace.value = viewDataStore.data.appointmentToReplace;
-  if (appointmentToReplace.value) {
+  // se c'è un appuntamento da sostituire apri il modale di sostituzione
+  if (viewDataStore.data.appointmentToReplace) {
+    await getAppointmentPatientData();
     isModalReplaceOpen.value = true;
   } else {
+    // altrimenti carica il paziente di default dell'account e apri il modale per la conferma  prenotazione
     await getDefaultPatientData();
-    isModalOpen.value = true;
+    isModalConfirmOpen.value = true;
   }
 };
 
-// chiudi il modale
-const closeModal = () => {
-  isModalOpen.value = false;
-  selectedSlot.value = null;
+// chiudi i modali
+const closeModals = () => {
+  isModalConfirmOpen.value = false;
   isModalReplaceOpen.value = false;
+  selectedSlot.value = null;
 };
 
 // recupera le informazioni del paziente di default
@@ -297,9 +299,9 @@ const getDefaultPatientData = async () => {
   try {
     const response = await api.get('/account/patient');
     if (response && response.data) {
-      defaultPatientData.value = response.data;
+      patientData.value = response.data;
     } else {
-      defaultPatientData.value = {};
+      patientData.value = {};
     }
   } catch (error) {
     console.error(': Unable to get default patient data ', error);
@@ -307,13 +309,40 @@ const getDefaultPatientData = async () => {
   }
 };
 
-// alla chisura del modale invia al backend le informazioni del paziente e della prenotazione
-const saveAppointment = async (confirmedAppointment) => {
+const getAppointmentPatientData = async () => {
   try {
-    await api.post('/appointment', confirmedAppointment);
-    alertStore.setSuccess('Prenotazione completata. verrai renidirizzato alla gestione appuntamenti');
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    closeModal();
+    const response = await api.get(`/appointments/${viewDataStore.data.appointmentToReplace.appointment_id}/patient`);
+    if (response && response.data) {
+      patientData.value = response.data;
+    } else {
+      patientData.value = {};
+    }
+  } catch (error) {
+    alertStore.setError('Errore durante il recupero dei dati del paziente');
+    console.error(': Unable to get appointment patient data ', error);
+  }
+};
+
+// alla chisura del modale invia al backend le informazioni del paziente e della prenotazione
+const saveAppointment = async () => {
+  try {
+    let payload = {
+      patient: patientData.value,
+      appointment: selectedSlot.value,
+    };
+    // se c'è un appuntamento da sostituire invia la richiesta di sostituzione e cancella l'appuntamento da sostituire nello store
+    if (viewDataStore.data.appointmentToReplace) {
+      await api.put(`/appointments/${appointmentToReplace.value.appointment_id}/replace`, payload);
+      alertStore.setSuccess('Appuntamento modificato. Verrai reindirizzato alla gestione appuntamenti');
+      viewDataStore.data.appointmentToReplace = null;
+    } else {
+      // se non c'è un appuntamento da sostituire invia la richiesta di prenotazione
+      await api.post('/appointment', payload);
+      alertStore.setSuccess('Prenotazione completata. Verrai renidirizzato alla gestione appuntamenti');
+    }
+    // attende 1 secondo e chiude i modali e reindirizza alla gestione appuntamenti
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    closeModals();
     router.push({ name: 'appointments' });
   } catch (error) {
     console.error('Errore nella prenotazione:', error);
@@ -322,9 +351,18 @@ const saveAppointment = async (confirmedAppointment) => {
 };
 
 onMounted(() => {
-  if (!viewDataStore.data.selectedService) {
+  // se non è stato selezionato un esame e non c'è un appuntamento da sostituire torna alla selezione dell'esame
+  if (!viewDataStore.data.selectedService && !viewDataStore.data.appointmentToReplace) {
     router.push({ name: 'service-selection' });
+    // se non è stato selezionato un esame ma c'è un appuntamento da sostituire torna alla gestione appuntamenti
+  } else if (!viewDataStore.data.selectedService && viewDataStore.data.appointmentToReplace) {
+    router.push({ name: 'appointments' });
   }
+  // se c'è un appuntamento da sostituire caricalo dallo store in una variabile reattiva
+  if (viewDataStore.data.appointmentToReplace) {
+    appointmentToReplace.value = viewDataStore.data.appointmentToReplace;
+  }
+
   initializeDateRange();
   getAvailableSlots();
 });

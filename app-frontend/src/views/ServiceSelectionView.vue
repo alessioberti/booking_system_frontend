@@ -65,7 +65,7 @@ const viewDataStore = useViewDataStore();
 const serviceTypes = ref([]);
 const currentPage = ref(1);
 const totalPages = ref(1);
-const perPage = ref(10);
+const perPage = ref(5);
 const searchService = ref('');
 
 // Recuperare gli esami dal backend

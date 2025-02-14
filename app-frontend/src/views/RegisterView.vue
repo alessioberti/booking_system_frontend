@@ -183,7 +183,7 @@ const RegisterNewAccount = async () => {
 
     // se non ci sono errori manda un messaggio aspetta  e vai alla pagina di login
     alertStore.setSuccess('Account Registrato con successo');
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     router.push('/login');
     // altrimenti leggi l'errore e mostra un messaggio
   } catch (err) {

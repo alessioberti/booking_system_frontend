@@ -189,6 +189,7 @@ const birthdate = ref('');
 const appointmentInfo = ref(props.appointmentInfo);
 const useDefault = ref(true);
 const clearValidation = () => {};
+
 // inizialiizza il form con i dati del paziente
 const initForm = () => {
   alertStore.clearAlerts();
@@ -226,43 +227,9 @@ const returnBack = () => {
   emit('close');
 };
 
-// conferma la prenotazione con i dati del paziente e della prenotazione necessari per il backend
+// conferma la prenotazione
 const confirmBooking = () => {
-  let payload;
-  let patient;
-  let appointment;
-  // come per il form di registrazione, controlla se i campi obbligatori sono stati compilati
-  if (
-    !firstName.value.trim() ||
-    !lastName.value.trim() ||
-    !email.value.trim() ||
-    !fiscalcode.value.trim() ||
-    !birthdate.value.trim() ||
-    !telNumber.value.trim()
-  ) {
-    alertStore.setError('Attenzione tutti i campi sono obbligatori');
-    return;
-  }
-
-  // crea un oggetto paziente sovrascrivendo i dati se sono stati modificati
-  patient = props.patientData;
-  patient.first_name = firstName.value;
-  patient.last_name = lastName.value;
-  patient.email = email.value;
-  patient.tel_number = telNumber.value;
-  patient.fiscal_code = fiscalcode.value;
-  patient.birth_date = birthdate.value;
-  patient.is_default = useDefault.value;
-
-  // crea un oggetto prenotazione sovrascrivendo le note se sono state modificate
-  appointment = props.bookingData;
-  appointment.info = appointmentInfo.value;
-
-  // crea un oggetto payload con i dati del paziente e della prenotazione
-  const confirmedAppointment = { patient, appointment };
-
-  // ritorna alla view precedente con i dati della prenotazione confermati
-  emit('confirm', confirmedAppointment);
+  emit('confirm');
 };
 </script>
 
