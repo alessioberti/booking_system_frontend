@@ -68,7 +68,6 @@
               required="true"
               placeholder="Inserisci cognome"
               class="input"
-              @input="clearValidation"
             />
           </div>
         </div>
@@ -83,7 +82,6 @@
               pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
               placeholder="Inserisci email"
               class="input"
-              @input="clearValidation"
             />
           </div>
 
@@ -97,7 +95,6 @@
               pattern="^\+?\d{7,13}$"
               placeholder="Inserisci telefono"
               class="input"
-              @input="clearValidation"
             />
           </div>
         </div>
@@ -114,7 +111,6 @@
               required="true"
               placeholder="Inserisci codice fiscale"
               class="input"
-              @input="clearValidation"
             />
           </div>
           <div class="flex-1">
@@ -127,7 +123,6 @@
               min="1900-01-01"
               class="input text-standard"
               pattern="\d{4}-\d{2}-\d{2}"
-              @input="clearValidation"
             />
           </div>
         </div>
@@ -163,8 +158,6 @@ const birthDate = ref(null);
 const passwordMismatch = computed(() => {
   return password.value.length > 0 && password.value !== confirmPassword.value;
 });
-
-const clearValidation = () => {};
 
 const RegisterNewAccount = async () => {
   alertStore.clearAlerts();

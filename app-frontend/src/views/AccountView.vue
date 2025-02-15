@@ -1,6 +1,11 @@
 <template>
-  <div class="box-container md:max-w-2xl">
-    <h2 class="text-2xl font-bold mb-6 text-center">Gestione Account</h2>
+  <div class="box-container">
+    <div class="flex justify-between mb-4">
+      <button class="button-back" @click="goToHome">Indietro</button>
+      <h2 class="title-page">Gestione Account</h2>
+      <button @click="logoutAccount" class="button-back flex justify-end">Effettua il Logout</button>
+    </div>
+    <hr class="mb-12" />
 
     <div v-if="!showpatientdata">
       <div class="grid grid-cols-1 gap-6">
@@ -89,13 +94,13 @@
       </div>
 
       <!-- punsanti per tornare indietro o modificare i dati del paziente -->
-      <div v-else class="flex justify-between mt-6 mb-2">
-        <button @click="goToHome" class="button-back mb-4">Indietro</button>
+      <div v-else class="flex justify-end mt-6 mb-2">
         <button @click="goToPatientData" class="button-success mb-4">Modifica dati anagrafici</button>
       </div>
+      <hr />
+
       <div v-if="!isEditing">
-        <hr />
-        <div class="mt-12">
+        <div class="mt-6">
           <button @click="showDeleteAccountModal" class="button-delete mb-4">Cancella i miei dati</button>
           <p class="text-standard">
             Attenzione la cancellazione dell'account è irreversibile. Verranno eliminati tutti i dati collegati
@@ -119,7 +124,6 @@
               class="input"
               required
               placeholder="Inserisci il nome"
-              @input="clearValidation"
             />
           </div>
           <div>
@@ -132,7 +136,6 @@
               class="input"
               required
               placeholder="Inserisci il cognome"
-              @input="clearValidation"
             />
           </div>
           <div>
@@ -160,7 +163,6 @@
               required
               placeholder="Inserisci il numero di telefono"
               pattern="^\+?\d{10,13}$"
-              @input="clearValidation"
             />
           </div>
           <div>
@@ -174,7 +176,6 @@
               required
               placeholder="Inserisci codice fiscale"
               pattern="^[a-zA-Z0-9]{3,32}$"
-              @input="clearValidation"
             />
           </div>
           <div>
@@ -188,7 +189,6 @@
               required
               placeholder="Inserisci la data di nascita"
               pattern="\d{4}-\d{2}-\d{2}"
-              @input="clearValidation"
             />
           </div>
           <div class="flex justify-end space-x-2">
@@ -419,6 +419,16 @@ const updatePatientData = async () => {
   } catch (error) {
     console.error('Unable to update patient data', error);
     alertStore.setError("Errore durante l'aggiornamento dei dati del paziente");
+  }
+};
+
+const logoutAccount = async () => {
+  try {
+    await api.post('/logout');
+    router.push({ name: 'login' });
+  } catch (err) {
+    console.error(err);
+    alertStore.setError('Errore durante il logout');
   }
 };
 

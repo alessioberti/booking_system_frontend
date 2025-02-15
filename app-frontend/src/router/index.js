@@ -8,6 +8,7 @@ import RegisterView from '../views/RegisterView.vue';
 import { useAuthStore } from '../stores/auth';
 import MainLayout from '../components/MainLayout.vue';
 import Account from '../views/AccountView.vue';
+import ValidateAccount from '../views/ValidateAccountView.vue';
 
 const routes = [
   {
@@ -17,6 +18,7 @@ const routes = [
       { path: '', name: 'home', component: Home },
       { path: '/login', name: 'login', component: LoginView },
       { path: '/register', name: 'register', component: RegisterView },
+      { path: '/validate-account', name: 'validate-account', component: ValidateAccount },
       // rotte protette
       { path: '/appointments', name: 'appointments', component: Appointments, meta: { requiresAuth: true } },
       { path: '/service-selection', name: 'service-selection', component: ServiceSelection, meta: { requiresAuth: true } },

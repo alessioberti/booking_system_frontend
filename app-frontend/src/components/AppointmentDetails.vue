@@ -22,7 +22,7 @@
       <div></div>
       <!-- dati anagrafici paziente -->
       <h3 v-if="useDefault" class="sub-title-page mb-2 mt-4">Verifica i tuoi dati prima di prenotare:</h3>
-      <h3 v-else class="sub-title-page mb-2 mt-4">Inserisci un nuovo paziente:</h3>
+      <h3 v-else class="sub-title-page mb-2 mt-4">Modifica i dati paziente:</h3>
       <form @submit.prevent="confirmBooking()" class="space-y-6">
         <div class="lg:flex block justify-between">
           <div class="mb-4 w-full lg:w-1/2 lg:mr-2">
@@ -35,7 +35,6 @@
               class="input"
               required="true"
               placeholder="Inserisci il nome"
-              @input="clearValidation"
             />
           </div>
 
@@ -49,7 +48,6 @@
               class="input"
               required="true"
               placeholder="Inserisci il cognome"
-              @input="clearValidation"
             />
           </div>
         </div>
@@ -80,7 +78,6 @@
               required="true"
               placeholder="Inserisci il numero di telefono"
               pattern="^\+?\d{7,13}$"
-              @input="clearValidation"
             />
           </div>
         </div>
@@ -96,7 +93,6 @@
               required="true"
               placeholder="Inserisci codice fiscale"
               pattern="^[a-zA-Z0-9]{3,32}$"
-              @input="clearValidation"
             />
           </div>
 
@@ -111,7 +107,6 @@
               required="true"
               placeholder="Inserisci la data di nascita"
               pattern="\d{4}-\d{2}-\d{2}"
-              @input="clearValidation"
             />
           </div>
         </div>
