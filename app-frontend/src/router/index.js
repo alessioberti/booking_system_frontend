@@ -45,10 +45,6 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return next({ name: 'login' });
   }
-  // se la rotta è login e l'utente è autenticato, reindirizza alla home
-  if (to.name === 'login' && authStore.isAuthenticated) {
-    return next({ name: 'home' });
-  }
   // altrimenti, prosegui con la navigazione (interceptor per token scaduto)
   next();
 });

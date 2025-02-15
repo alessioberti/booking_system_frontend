@@ -96,18 +96,11 @@
       <div v-if="!isEditing">
         <hr />
         <div class="mt-12">
-          <button
-            @click="
-              () =>
-                confirmAction(
-                  deleteAccount,
-                  'Attenzione la cancellazione dell\'account è irreversibile. Verranno eliminati tutti i dati dei pazienti collegati all\'account.'
-                )
-            "
-            class="button-delete mb-4"
-          >
-            Cancella i miei dati
-          </button>
+          <button @click="showDeleteAccountModal" class="button-delete mb-4">Cancella i miei dati</button>
+          <p class="text-standard">
+            Attenzione la cancellazione dell'account è irreversibile. Verranno eliminati tutti i dati collegati
+            all'account (appuntamenti, pazienti, ecc.)
+          </p>
         </div>
       </div>
     </div>
@@ -206,14 +199,24 @@
       </div>
     </div>
 
-    <!-- modale per confermare (rimane solo per l'eliminazione dell'account) -->
-    <div v-if="updateModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+    <!-- modale per confermare l'eliminazione dell'account -->
+    <div v-if="deleteAccountModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
         <h3 class="text-lg font-semibold mb-4">Conferma azione</h3>
-        <p class="text-standard text-sm mb-4">{{ modalMessage }}</p>
+        <p class="text-standard text-sm mb-4">Sei sicuro di voler procedere ?</p>
+        <label class="label" for="modalPassword">Password Attuale</label>
+        <input
+          id="modalPassword"
+          type="password"
+          v-model="password"
+          minlength="8"
+          maxlength="32"
+          placeholder="Inserisci la tua password"
+          class="input w-full mb-4"
+        />
         <div class="flex justify-end gap-4">
-          <button @click="proceedAction" class="button-delete">Procedi</button>
-          <button @click="closeModal" class="button-back">Indietro</button>
+          <button @click="deleteAccount" class="button-delete">Procedi</button>
+          <button @click="closeDeleteAccountModal" class="button-back">Indietro</button>
         </div>
       </div>
     </div>
@@ -235,9 +238,7 @@ const username = ref('');
 const password = ref('');
 const newPassword = ref('');
 const confirmNewPassword = ref('');
-const updateModal = ref(false);
-const pendingAction = ref(null);
-const modalMessage = ref('');
+const deleteAccountModal = ref(false);
 const showpatientdata = ref(false);
 const firstName = ref('');
 const lastName = ref('');
@@ -255,24 +256,13 @@ const passwordMismatch = computed(() => {
   return confirmNewPassword.value.length > 0 && newPassword.value !== confirmNewPassword.value;
 });
 
-// conferma l'azione da eseguire (rimane per l'eliminazione dell'account)
-const confirmAction = (action, message) => {
-  pendingAction.value = action;
-  modalMessage.value = message;
-  updateModal.value = true;
+const closeDeleteAccountModal = () => {
+  deleteAccountModal.value = false;
+  resetPasswordEdit();
 };
 
-const proceedAction = async () => {
-  if (pendingAction.value) {
-    await pendingAction.value();
-  }
-  updateModal.value = false;
-  pendingAction.value = null;
-};
-
-const closeModal = () => {
-  updateModal.value = false;
-  pendingAction.value = null;
+const showDeleteAccountModal = () => {
+  deleteAccountModal.value = true;
 };
 
 const enableusernameEdit = () => {
@@ -285,12 +275,12 @@ const enablePasswordEdit = () => {
   editusername.value = false;
 };
 
-const cancelUsernameEdit = () => {
+const resetUsernameEdit = () => {
   editusername.value = false;
   getAccountData();
 };
 
-const cancelPasswordEdit = () => {
+const resetPasswordEdit = () => {
   editPassword.value = false;
   password.value = '';
   newPassword.value = '';
@@ -298,8 +288,8 @@ const cancelPasswordEdit = () => {
 };
 
 const cancelEdits = () => {
-  if (editusername.value) cancelUsernameEdit();
-  if (editPassword.value) cancelPasswordEdit();
+  if (editusername.value) resetUsernameEdit();
+  if (editPassword.value) resetPasswordEdit();
 };
 
 const saveEdits = async () => {
@@ -333,10 +323,7 @@ const updatePassword = async () => {
       new_password: newPassword.value,
     });
     alertStore.setSuccess('Password aggiornata con successo');
-    editPassword.value = false;
-    password.value = '';
-    newPassword.value = '';
-    confirmNewPassword.value = '';
+    resetPasswordEdit();
   } catch (err) {
     console.error(err);
     alertStore.setError("Errore durante l'aggiornamento della password");
@@ -346,12 +333,26 @@ const updatePassword = async () => {
 // anonimizza l'account e tutti i pazienti collegati
 const deleteAccount = async () => {
   try {
-    await api.post('/account/anonimize');
+    await api.post('/account/delete', { password: password.value });
     alertStore.setSuccess('Account eliminato con successo');
-    router.push({ name: 'home' });
+    deleteAccountModal.value = false;
+    router.push({ name: 'login' });
   } catch (err) {
     console.error(err);
-    alertStore.setError("Errore durante l'eliminazione dell'account");
+    // se la password di conferma è errata
+    if (err?.response?.status === 401) {
+      alertStore.setError('La password inserita è errata');
+      // se l'account ha appuntamenti attivi
+    } else if (err?.response?.status === 409) {
+      alertStore.setError(
+        'Non è possibile cancellare un account con appuntamenti attivi. Cancella prima gli appuntamenti'
+      );
+      // se l'account è admin
+    } else if (err?.response?.status === 403) {
+      alertStore.setError('Questo account non può essere cancellato');
+    } else {
+      alertStore.setError("Errore durante l'eliminazione dell'account");
+    }
   }
 };
 

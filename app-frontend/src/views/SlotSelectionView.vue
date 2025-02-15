@@ -106,11 +106,11 @@
       :patientData="patientData"
       :serviceName="serviceName"
     />
-    <!-- Modale per cambiare giorno e ora della prenotazione -->
+    <!-- Modale per cambiare prenotazione -->
     <AppointmentReplace
       v-if="isModalReplaceOpen"
       @close="closeModals"
-      @confirm="saveAppointment"
+      @confirm="replaceAppointment"
       :newAppointment="selectedSlot"
       :oldAppointment="appointmentToReplace"
     />
@@ -323,24 +323,39 @@ const getAppointmentPatientData = async () => {
   }
 };
 
-// alla chisura del modale invia al backend le informazioni del paziente e della prenotazione
-const saveAppointment = async () => {
+const replaceAppointment = async () => {
   try {
+    // crea il payload per la sostituzione dell'appuntamento e aggiorna i dati paziente e info
+
     let payload = {
       patient: patientData.value,
       appointment: selectedSlot.value,
     };
-    // se c'è un appuntamento da sostituire invia la richiesta di sostituzione e cancella l'appuntamento da sostituire nello store
-    if (viewDataStore.data.appointmentToReplace) {
-      await api.put(`/appointments/${appointmentToReplace.value.appointment_id}/replace`, payload);
-      alertStore.setSuccess('Appuntamento modificato. Verrai reindirizzato alla gestione appuntamenti');
-      viewDataStore.data.appointmentToReplace = null;
-    } else {
-      // se non c'è un appuntamento da sostituire invia la richiesta di prenotazione
-      await api.post('/appointment', payload);
-      alertStore.setSuccess('Prenotazione completata. Verrai renidirizzato alla gestione appuntamenti');
-    }
-    // attende 1 secondo e chiude i modali e reindirizza alla gestione appuntamenti
+
+    await api.put(`/appointments/${appointmentToReplace.value.appointment_id}/replace`, payload);
+    alertStore.setSuccess('Appuntamento modificato. Verrai reindirizzato alla gestione appuntamenti');
+    viewDataStore.data.appointmentToReplace = null;
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    closeModals();
+    router.push({ name: 'appointments' });
+  } catch (error) {
+    console.error("Errore durante la sostituzione dell'appuntamento:", error);
+    alertStore.setError("Si è verificato un errore durante la sostituzione dell'appuntamento");
+  }
+};
+
+// crea una nuova prenotazione
+const saveAppointment = async (emitModal) => {
+  try {
+    let payload = {
+      patient: emitModal.patient,
+      appointment: selectedSlot.value,
+    };
+
+    payload.appointment.info = emitModal.appointment_info;
+
+    await api.post('/appointment', payload);
+    alertStore.setSuccess('Prenotazione completata. Verrai renidirizzato alla gestione appuntamenti');
     await new Promise((resolve) => setTimeout(resolve, 1000));
     closeModals();
     router.push({ name: 'appointments' });

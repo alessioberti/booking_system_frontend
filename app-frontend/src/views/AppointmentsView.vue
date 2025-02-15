@@ -343,23 +343,23 @@ const selectNewSlot = () => {
   router.push({ name: 'slot-selection' });
 };
 
-const updateAppointment = async () => {
+const updateAppointment = async (emitModal) => {
   try {
     alertStore.clearAlerts();
     // se il paziente era di default ma è richiesto un nuovo paziente crea un nuovo paziente e lo associa alla prenotazione
     if (patientToEdit.value.is_default === false && isOriginPatientDeafult === true) {
       await api.put(`/appointments/${appointmentToEdit.value.appointment_id}/patient/replace`, {
-        patient: patientToEdit.value,
+        patient: emitModal.patient,
       });
       // se il paziente non era di default aggiorna i dati del paziente
     } else if (patientToEdit.value.is_default === false && isOriginPatientDeafult === false) {
       await api.put(`/appointments/${appointmentToEdit.value.appointment_id}/patient/update`, {
-        patient: patientToEdit.value,
+        patient: emitModal.patient,
       });
     }
     // aggiorna le note della prenotazione
     await api.put(`/appointments/${appointmentToEdit.value.appointment_id}/info`, {
-      info: appointmentToEdit.value.info,
+      info: emitModal.appointment_info,
     });
     alertStore.setSuccess('Prenotazione modificata con successo');
     await new Promise((resolve) => setTimeout(resolve, 1000));

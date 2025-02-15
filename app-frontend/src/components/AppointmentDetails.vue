@@ -116,9 +116,7 @@
           </div>
         </div>
 
-        <button v-if="useDefault" @click="bookForAnother" class="button-success mb-4">
-          Voglio prenotare per un altro paziente
-        </button>
+        <button v-if="useDefault" @click="bookForAnother" class="button-success mb-4">Modifica dati paziente</button>
         <p v-if="!useDefault" class="text-standard mb-4">
           Se non possiedi un codice fiscale italiano, inserisci il numero del tuo documento di identità o passaporto.
         </p>
@@ -157,13 +155,16 @@ const props = defineProps({
     type: String,
     required: true,
   },
+
+  // dati aggiuntivi per la prenotazione viene passato solo alla modifica appuntamento
   appointmentInfo: {
     type: String,
     default: '',
   },
+
   patientData: {
     type: Object,
-    default: null,
+    required: true,
   },
 });
 
@@ -188,28 +189,6 @@ const fiscalcode = ref('');
 const birthdate = ref('');
 const appointmentInfo = ref(props.appointmentInfo);
 const useDefault = ref(true);
-const clearValidation = () => {};
-
-// inizialiizza il form con i dati del paziente
-const initForm = () => {
-  alertStore.clearAlerts();
-  if (props.patientData) {
-    firstName.value = props.patientData.first_name || '';
-    lastName.value = props.patientData.last_name || '';
-    email.value = props.patientData.email || '';
-    telNumber.value = props.patientData.tel_number || '';
-    fiscalcode.value = props.patientData.fiscal_code || '';
-    birthdate.value = props.patientData.birth_date || '';
-    useDefault.value = props.patientData.is_default;
-  } else {
-    bookForAnother();
-  }
-  appointmentInfo.value = props.appointmentInfo || '';
-};
-
-onMounted(() => {
-  initForm();
-});
 
 // se clicca su prenota per un altro paziente, resetta i campi del form
 const bookForAnother = () => {
@@ -229,8 +208,38 @@ const returnBack = () => {
 
 // conferma la prenotazione
 const confirmBooking = () => {
-  emit('confirm');
+  emit('confirm', {
+    patient: {
+      first_name: firstName.value,
+      last_name: lastName.value,
+      email: email.value,
+      tel_number: telNumber.value,
+      fiscal_code: fiscalcode.value,
+      birth_date: birthdate.value,
+    },
+    appointment_info: appointmentInfo.value,
+  });
 };
+
+// inizialiizza il form con i dati del paziente
+const initForm = () => {
+  alertStore.clearAlerts();
+  if (!props.patientData) {
+    alertStore.setError('Errore durante il caricamento dei dati del paziente');
+  }
+  firstName.value = props.patientData.first_name || '';
+  lastName.value = props.patientData.last_name || '';
+  email.value = props.patientData.email || '';
+  telNumber.value = props.patientData.tel_number || '';
+  fiscalcode.value = props.patientData.fiscal_code || '';
+  birthdate.value = props.patientData.birth_date || '';
+  useDefault.value = props.patientData.is_default;
+  appointmentInfo.value = props.appointmentInfo || '';
+};
+
+onMounted(() => {
+  initForm();
+});
 </script>
 
 <style></style>
