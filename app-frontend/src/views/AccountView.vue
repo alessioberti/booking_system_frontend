@@ -1,12 +1,11 @@
 <template>
   <div class="box-container">
-    <div class="flex justify-between mb-4">
-      <button class="button-back" @click="goToHome">Indietro</button>
+    <div class="flex items-center mb-4">
+      <button class="button-back mr-6" @click="goToHome">Indietro</button>
       <h2 class="title-page">Gestione Account</h2>
-      <button @click="logoutAccount" class="button-back flex justify-end">Effettua il Logout</button>
     </div>
-    <hr class="mb-12" />
-
+    <hr />
+    <h3 class="text-lg font-semibold mt-4 mb-4">Gestisci i tuoi dati:</h3>
     <div v-if="!showpatientdata">
       <div class="grid grid-cols-1 gap-6">
         <!-- form per aggiornare username -->
@@ -94,19 +93,22 @@
       </div>
 
       <!-- punsanti per tornare indietro o modificare i dati del paziente -->
-      <div v-else class="flex justify-end mt-6 mb-2">
-        <button @click="goToPatientData" class="button-success mb-4">Modifica dati anagrafici</button>
+      <div v-if="!isEditing" class="flex mb-4 mt-4">
+        <button @click="goToPatientData" class="button-success">Modifica dati anagrafici</button>
       </div>
+
       <hr />
 
       <div v-if="!isEditing">
-        <div class="mt-6">
-          <button @click="showDeleteAccountModal" class="button-delete mb-4">Cancella i miei dati</button>
-          <p class="text-standard">
-            Attenzione la cancellazione dell'account è irreversibile. Verranno eliminati tutti i dati collegati
-            all'account (appuntamenti, pazienti, ecc.)
-          </p>
+        <h3 class="text-lg font-semibold mt-6 mb-4">Sicurezza e privacy:</h3>
+        <div class="mt-6 flex justify-between mb-4">
+          <button @click="logoutAccount" class="button-back">Effettua il Logout</button>
+          <button @click="showDeleteAccountModal" class="button-delete">Cancella i miei dati</button>
         </div>
+        <p class="text-standard">
+          Attenzione la cancellazione dell'account è irreversibile. Verranno eliminati tutti i dati collegati
+          all'account (appuntamenti, pazienti, ecc.)
+        </p>
       </div>
     </div>
 
@@ -228,6 +230,7 @@ import { ref, computed, onMounted } from 'vue';
 import api from '../services/api';
 import { useRouter } from 'vue-router';
 import { useAlertStore } from '../stores/alert';
+import { useAuthStore } from '@/stores/auth';
 
 const alertStore = useAlertStore();
 const router = useRouter();
@@ -413,7 +416,7 @@ const updatePatientData = async () => {
       fiscal_code: fiscalcode.value,
       birth_date: birthdate.value,
     };
-    await api.put('/account/patient/info', data);
+    await api.put('/account/patient/update', data);
     alertStore.setSuccess('Dati paziente aggiornati con successo');
     showpatientdata.value = false;
   } catch (error) {
@@ -424,7 +427,7 @@ const updatePatientData = async () => {
 
 const logoutAccount = async () => {
   try {
-    await api.post('/logout');
+    useAuthStore().logout();
     router.push({ name: 'login' });
   } catch (err) {
     console.error(err);

@@ -6,7 +6,7 @@
         <h2 class="title-page">Valida il tuo account</h2>
       </div>
       <div class="space-y-6">
-        <div class="flex justify-between gap-6">
+        <div class="flex flex-col md:flex-row md:justify-between gap-6">
           <div class="flex-1">
             <label for="password" class="label">Password</label>
             <input

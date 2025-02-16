@@ -11,14 +11,14 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// interceptor per intercettare le richieste con token scaduto
-api.interceptors.response.use(
+// interceptor per intercettare le richieste con token scaduto e reindirizzare al login
+// se il client rileva errore 401 (non autorizzato) dalla risposta del server
+api.interceptors.response.use( 
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response && error.response.status === 401) {
       const authStore = useAuthStore();
-      authStore.logout();
-      // propaga l'errore per gestirlo nella guardia del router
+      await authStore.logout();
       throw error;
     }
     return Promise.reject(error);

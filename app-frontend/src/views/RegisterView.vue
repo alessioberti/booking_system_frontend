@@ -6,14 +6,14 @@
         <h2 class="title-page">Registra un nuovo account</h2>
       </div>
       <div class="space-y-6">
-        <div class="flex justify-between gap-6">
+        <div class="flex flex-col md:flex-row md:justify-between gap-6">
           <div class="flex-1">
-            <label for="username" class="label">Username</label>
+            <label for="username" class="label mb-1">Nome utente</label>
             <input
               id="username"
               type="text"
               v-model="username"
-              required="true"
+              required
               placeholder="Inserisci username"
               class="input"
               pattern="^[A-Za-z0-9]{3,32}$"
@@ -21,86 +21,55 @@
               oninput="this.setCustomValidity('')"
             />
           </div>
-          <div class="flex-1"></div>
+          <div class="hidden md:block flex-1"></div>
         </div>
 
-        <div class="flex justify-between gap-6">
+        <div class="flex flex-col md:flex-row md:justify-between gap-6">
           <div class="flex-1">
-            <label for="password" class="label">Password</label>
-            <input
-              id="password"
-              type="password"
-              v-model="password"
-              required="true"
-              pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,32}$"
-              placeholder="Inserisci Password"
-              class="input"
-              oninvalid="this.setCustomValidity('La password deve contenere da 8 a 32 caratteri, una lettera maiuscola, una minuscola, un numero e un carattere speciale')"
-              oninput="this.setCustomValidity('')"
-            />
-          </div>
-          <div class="flex-1">
-            <label for="confirmPassword" class="label">Conferma Password</label>
-            <input
-              id="confirmPassword"
-              type="password"
-              v-model="confirmPassword"
-              required="true"
-              placeholder="Conferma password"
-              class="input"
-            />
-            <p v-if="passwordMismatch" class="text-error text-sm">Le password non corrispondono.</p>
-          </div>
-        </div>
-        <hr />
-        <h2 class="sub-title-page">Inserisci i tuoi dati</h2>
-        <div class="flex justify-between gap-6">
-          <div class="flex-1">
-            <label for="firstName" class="label">Nome</label>
+            <label for="firstName" class="label mb-1">Nome</label>
             <input id="firstName" type="text" v-model="firstName" required placeholder="Inserisci nome" class="input" />
           </div>
           <div class="flex-1">
-            <label for="lastName" class="label">Cognome</label>
+            <label for="lastName" class="label mb-1">Cognome</label>
             <input
               id="lastName"
               type="text"
               v-model="lastName"
-              required="true"
+              required
               placeholder="Inserisci cognome"
               class="input"
             />
           </div>
         </div>
-        <div class="flex justify-between gap-6">
+        <div class="flex flex-col md:flex-row md:justify-between gap-6">
           <div class="flex-1">
-            <label for="email" class="label">Email</label>
+            <label for="email" class="label mb-1">Email</label>
             <input
               id="email"
               type="email"
               v-model="email"
-              required="true"
+              required
               pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
               placeholder="Inserisci email"
               class="input"
             />
           </div>
-
           <div class="flex-1">
-            <label for="telNumber" class="label">Telefono</label>
+            <label for="telNumber" class="label mb-1">Telefono</label>
             <input
               id="telNumber"
               type="text"
               v-model="telNumber"
-              required="true"
+              required
               pattern="^\+?\d{7,13}$"
               placeholder="Inserisci telefono"
               class="input"
             />
           </div>
         </div>
-        <div class="flex justify-between gap-6">
+        <div class="flex flex-col md:flex-row md:justify-between gap-6">
           <div class="flex-1">
-            <label for="fiscalCode" class="label">Codice Fiscale</label>
+            <label for="fiscalCode" class="label mb-1">Codice Fiscale</label>
             <input
               id="fiscalCode"
               type="text"
@@ -108,27 +77,29 @@
               minlength="3"
               maxlength="32"
               pattern="^[a-zA-Z0-9]{3,32}$"
-              required="true"
+              required
               placeholder="Inserisci codice fiscale"
               class="input"
             />
           </div>
           <div class="flex-1">
-            <label for="birthDate" class="label">Data di Nascita</label>
+            <label for="birthDate" class="label mb-1">Data di Nascita</label>
             <input
               id="birthDate"
               type="date"
               v-model="birthDate"
-              required="true"
+              required
               min="1900-01-01"
               class="input text-standard"
               pattern="\d{4}-\d{2}-\d{2}"
             />
           </div>
         </div>
+
         <p class="text-standard">
           Se non possiedi un codice fiscale italiano, inserisci il numero del tuo documento di identità o passaporto.
         </p>
+
         <div class="flex justify-end mt-6">
           <button type="submit" class="button">Registrati</button>
         </div>
@@ -166,7 +137,6 @@ const RegisterNewAccount = async () => {
     const response = await api.post('/register', {
       username: username.value,
       email: email.value,
-      password: password.value,
       tel_number: telNumber.value,
       first_name: firstName.value,
       last_name: lastName.value,
@@ -176,7 +146,7 @@ const RegisterNewAccount = async () => {
 
     // se non ci sono errori manda un messaggio aspetta  e vai alla pagina di login
     alertStore.setSuccess('Account Registrato con successo');
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 10000));
     router.push('/login');
     // altrimenti leggi l'errore e mostra un messaggio
   } catch (err) {

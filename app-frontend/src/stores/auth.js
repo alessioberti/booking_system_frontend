@@ -1,6 +1,6 @@
-
 import api from '../services/api';
 import { defineStore } from 'pinia';
+import router from '../router';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -26,11 +26,14 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       try {
+        
         await api.post('/logout');
+
       } catch (err) {
         console.error('logout error:', err);
       }
       this.user = null;
+      router.push({ name: 'login' });
     },
 
     async checkAuth() {

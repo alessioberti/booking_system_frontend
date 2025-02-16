@@ -38,7 +38,7 @@
 
         <div class="grid grid-cols-2 mt-4 justify-items-start">
           <div class="text-standard">Non hai un account?</div>
-          <button class="font-semibold text-primary hover:underline">Registrati</button>
+          <button @click="goToRegister" class="font-semibold text-primary hover:underline">Registrati</button>
           <div class="text-standard">Password dimenticata ?</div>
           <button @click="showPasswordForgot" class="font-semibold text-primary hover:underline">
             Recupera Password
@@ -95,6 +95,10 @@ const hidePasswordForgot = () => {
 
 const showPasswordForgot = () => {
   passwordForgot.value = true;
+};
+
+const goToRegister = () => {
+  router.push({ name: 'register' });
 };
 
 const Login = async () => {
