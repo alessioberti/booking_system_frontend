@@ -1,7 +1,7 @@
 <template>
   <div class="box-container">
     <!-- form per la registrazione di un nuovo account -->
-    <form @submit.prevent="RegisterNewAccount" class="space-y-6">
+    <form v-if="!emailsent" @submit.prevent="RegisterNewAccount" class="space-y-6">
       <div>
         <h2 class="title-page">Registra un nuovo account</h2>
       </div>
@@ -105,6 +105,21 @@
         </div>
       </div>
     </form>
+    <!-- messaggio di conferma registrazione -->
+    <div v-else>
+      <div class="space-y-6">
+        <div>
+          <h2 class="title-page">Registrazione completata</h2>
+        </div>
+        <div>
+          <p class="text-standard">
+            Ti abbiamo inviato una mail all'indirizzo <span class="font-semibold">{{ email }}</span> per confermare la
+            registrazione.
+          </p>
+          <p class="text-standard">Controlla la tua casella di posta elettronica e segui le istruzioni.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -125,10 +140,15 @@ const firstName = ref('');
 const lastName = ref('');
 const fiscalCode = ref('');
 const birthDate = ref(null);
+const emailsent = ref(false);
 // verifica in tempo reale se le password corrispondono
 const passwordMismatch = computed(() => {
   return password.value.length > 0 && password.value !== confirmPassword.value;
 });
+
+const ShowEmailSent = () => {
+  emailsent.value = true;
+};
 
 const RegisterNewAccount = async () => {
   alertStore.clearAlerts();
@@ -146,8 +166,7 @@ const RegisterNewAccount = async () => {
 
     // se non ci sono errori manda un messaggio aspetta  e vai alla pagina di login
     alertStore.setSuccess('Account Registrato con successo');
-    await new Promise((resolve) => setTimeout(resolve, 10000));
-    router.push('/login');
+    ShowEmailSent();
     // altrimenti leggi l'errore e mostra un messaggio
   } catch (err) {
     console.error('Error during registration', err);
@@ -155,7 +174,10 @@ const RegisterNewAccount = async () => {
       alertStore.setError('La data inserita non è valida');
     } else if (err?.response?.status === 422 && err?.response?.data?.error === 'email_already_exists') {
       console.log(err?.response?.data);
-      alertStore.setError('Email già registrata');
+      // se l'email è già registrata o l'utente non ha validato in tempo la registrazione invia un messaggio
+      alertStore.setError(
+        'Email già registrata. Se hai dimenticato la password o non ancora validato il tuo account clicca su password dimenticata'
+      );
     } else if (err?.response?.status === 422 && err?.response?.data?.error === 'username_already_exists') {
       alertStore.setError('Username già registrato');
     } else {

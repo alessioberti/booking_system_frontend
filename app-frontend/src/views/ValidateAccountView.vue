@@ -83,6 +83,15 @@ const ValidateAccount = async () => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       router.push({ name: 'login' });
     } catch (error) {
+      // se il token è scaduto reindirizza alla pagina di login e mostra un messaggio di info per token scaduto
+      // questa path è stata esclusa dall'interceptor per mostrare il messaggio di errore
+      if (error.response.status === 401) {
+        alertStore.setError(
+          'Link è scaduto richiedi una nuova validazione tramite "Password dimenticata?" nella pagina di login'
+        );
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        router.push({ name: 'login' });
+      }
       alertStore.setError("Errore durante la validazione dell'account");
     }
   }

@@ -11,12 +11,15 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// escludi path di login e registrazione dal controllo del token
+const excludedPaths = ['/login', '/validate', '/register'];
+
 // interceptor per intercettare le richieste con token scaduto e reindirizzare al login
 // se il client rileva errore 401 (non autorizzato) dalla risposta del server
 api.interceptors.response.use( 
   (response) => response,
   async (error) => {
-    if (error.response && error.response.status === 401) {
+    if (error.response && error.response.status === 401 && !excludedPaths.includes(error.config.url)) {
       const authStore = useAuthStore();
       await authStore.logout();
       throw error;
